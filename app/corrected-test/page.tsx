@@ -12,6 +12,7 @@ import { useKeyboardDrawing } from '@/hooks/useKeyboardDrawing';
 export default function CorrectedTestPage() {
   const router = useRouter();
   const [testLetters, setTestLetters] = useState<string[]>([]);
+  const [letterType, setLetterType] = useState<'capital' | 'small'>('capital');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState<string[]>([]);
@@ -39,6 +40,12 @@ export default function CorrectedTestPage() {
       setTestLetters(JSON.parse(storedLetters));
     } else {
       router.push('/');
+    }
+
+    // Read letterType from localStorage (defaults to 'capital' for backward compatibility)
+    const storedLetterType = localStorage.getItem('correctedTestLetterType');
+    if (storedLetterType === 'small' || storedLetterType === 'capital') {
+      setLetterType(storedLetterType);
     }
 
     const initModel = async () => {
@@ -120,10 +127,15 @@ export default function CorrectedTestPage() {
 
       // Use strict educational character matching for corrected test mode
       const hasGoodConfidence = result.confidence >= characterRecognizer.getConfidenceThreshold(result.letter);
-      const matchResult = isCharacterMatchStrict(result.letter, currentLetter, 'capital');
+      const matchResult = isCharacterMatchStrict(result.letter, currentLetter, letterType);
 
-      if (matchResult.isCorrect && hasGoodConfidence) {
-        // Only count EXACT capital letter matches as correct in corrected test
+      // Special case for 'c' and 'f' in small alphabets corrected test: accept both upper and lower case
+      const isSpecialCaseCorrect = letterType === 'small' && (currentLetter === 'c' || currentLetter === 'f') && 
+                                  (result.letter === currentLetter || result.letter === currentLetter.toUpperCase()) &&
+                                  hasGoodConfidence;
+
+      if ((matchResult.isCorrect && hasGoodConfidence) || isSpecialCaseCorrect) {
+        // Count exact letter matches (and special cases for c/f in small mode) as correct in corrected test
         setScore(score + 1);
         setWrongCaseDetected(false);
         setShowCelebration(true);
@@ -141,16 +153,37 @@ export default function CorrectedTestPage() {
             canvasRef.current?.clear();
             setIsProcessing(false);
           } else {
-            // Corrected test complete
-            const results = {
-              score: score + 1,
-              total: testLetters.length,
-              wrongAnswers: [],
-              isCorrectedTest: true,
-              allMastered: true,
-              type: 'writing' as const,
-            };
-            localStorage.setItem('testResults', JSON.stringify(results));
+            // Corrected test complete - user got the last letter correct
+            const finalScore = score + 1;
+            
+            // Check if user has any wrong answers from this corrected test session
+            if (wrongAnswers.length === 0) {
+              // Perfect! User got ALL letters correct - truly mastered
+              const results = {
+                score: finalScore,
+                total: testLetters.length,
+                wrongAnswers: [],
+                isCorrectedTest: true,
+                allMastered: true, // TRUE mastery - zero wrong answers
+                type: 'writing' as const,
+              };
+              localStorage.setItem('testResults', JSON.stringify(results));
+              // Clear the corrected test letters since they're mastered
+              localStorage.removeItem('correctedTestLetters');
+            } else {
+              // User got some letters wrong during this session - need another cycle
+              const results = {
+                score: finalScore,
+                total: testLetters.length,
+                wrongAnswers: wrongAnswers, // Keep track of wrong answers
+                isCorrectedTest: true,
+                allMastered: false, // Not mastered yet - has wrong answers
+                type: 'writing' as const,
+              };
+              localStorage.setItem('testResults', JSON.stringify(results));
+              // Set up next corrected test with wrong answers
+              localStorage.setItem('correctedTestLetters', JSON.stringify(wrongAnswers));
+            }
             router.push('/results');
           }
         }, 2500);
@@ -174,7 +207,7 @@ export default function CorrectedTestPage() {
             setIsProcessing(false);
           }, 3000);
         } else {
-          // Corrected test complete
+          // Corrected test complete - user got the last letter wrong
           setTimeout(() => {
             setShowIncorrect(false);
             const finalWrongAnswers = [...wrongAnswers, currentLetter];
@@ -183,9 +216,11 @@ export default function CorrectedTestPage() {
               total: testLetters.length,
               wrongAnswers: finalWrongAnswers,
               isCorrectedTest: true,
+              allMastered: false, // Definitely not mastered - has wrong answers
               type: 'writing' as const,
             };
             localStorage.setItem('testResults', JSON.stringify(results));
+            // Set up next corrected test cycle with wrong answers
             localStorage.setItem('correctedTestLetters', JSON.stringify(finalWrongAnswers));
             router.push('/results');
           }, 3000);

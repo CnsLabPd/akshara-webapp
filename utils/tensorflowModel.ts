@@ -449,7 +449,7 @@ export function isCharacterMatchStrict(recognized: string, expected: string, pra
       isCorrect: false,
       isExactMatch: false,
       isWrongCase: false,
-      feedback: `Try again! Draw the ${practiceMode === 'capital' ? 'capital' : 'lowercase'} letter ${expected}. AI saw: ${recognized}`,
+      feedback: `Oops! Try writing ${expected} again. You can do it! 😊`,
       allowAdvance: false
     };
   }
@@ -460,7 +460,7 @@ export function isCharacterMatchStrict(recognized: string, expected: string, pra
       isCorrect: true,
       isExactMatch: true,
       isWrongCase: false,
-      feedback: `Excellent! Perfect ${practiceMode === 'capital' ? 'capital' : 'lowercase'} ${expected}!`,
+      feedback: `Amazing! Perfect ${expected}! 🌟`,
       allowAdvance: true
     };
   }
@@ -471,7 +471,7 @@ export function isCharacterMatchStrict(recognized: string, expected: string, pra
       isCorrect: true,
       isExactMatch: false,
       isWrongCase: false,
-      feedback: `Perfect! Great job writing ${expected}! (Both ${expected} and ${recognized} look very similar)`,
+      feedback: `Wonderful! Great ${expected}! 🎉`,
       allowAdvance: true
     };
   }
@@ -482,7 +482,7 @@ export function isCharacterMatchStrict(recognized: string, expected: string, pra
       isCorrect: false,
       isExactMatch: false,
       isWrongCase: true,
-      feedback: `Good letter shape! But you wrote lowercase "${recognized}". Try writing CAPITAL "${expected}" instead.`,
+      feedback: `Great job! But make it BIG like this: ${expected}`,
       allowAdvance: false
     };
   } else {
@@ -490,7 +490,7 @@ export function isCharacterMatchStrict(recognized: string, expected: string, pra
       isCorrect: false,
       isExactMatch: false,
       isWrongCase: true,
-      feedback: `Good letter shape! But you wrote capital "${recognized}". Try writing lowercase "${expected}" instead.`,
+      feedback: `Nice! But make it small like this: ${expected}`,
       allowAdvance: false
     };
   }

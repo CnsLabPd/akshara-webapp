@@ -8,7 +8,6 @@ import KeyboardDrawingTutorial from '@/components/KeyboardDrawingTutorial';
 import { characterRecognizer, isNumberMatch } from '@/utils/tensorflowModel';
 import { isDesktopDevice } from '@/utils/deviceDetection';
 import { useKeyboardDrawing } from '@/hooks/useKeyboardDrawing';
-import { handwritingDataCollector } from '@/utils/handwritingDataCollector';
 
 const NUMBERS = '0123456789'.split('');
 
@@ -107,14 +106,6 @@ export default function PracticeNumbersPage() {
       console.log('- Confidence:', result.confidence);
       console.log('- Expected number:', currentNumber);
 
-      // Collect handwriting data for validation
-      await handwritingDataCollector.collectData(
-        canvas,
-        result.letter || '',
-        currentNumber,
-        result.confidence || 0,
-        'numbers'
-      );
 
       // Show what the model recognized
       setRecognizedOutput(result.letter || '(nothing detected)');

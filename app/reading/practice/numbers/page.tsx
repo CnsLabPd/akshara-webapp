@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { pronunciationDataCollector } from '@/utils/pronunciationDataCollector';
 
 const NUMBERS = '0123456789'.split('');
 
@@ -14,6 +15,10 @@ export default function SpeakingPracticeNumbersPage() {
   const [feedback, setFeedback] = useState<string>('');
   const [showCelebration, setShowCelebration] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
+  const [isDataCollectionMode, setIsDataCollectionMode] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [collectionStats, setCollectionStats] = useState<any>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -199,9 +204,9 @@ export default function SpeakingPracticeNumbersPage() {
       <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <Link href="/">
+            <Link href="/choose-language?section=reading&lang=en">
               <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
-                ← Home
+                ← Back
               </button>
             </Link>
           </div>
@@ -284,9 +289,9 @@ export default function SpeakingPracticeNumbersPage() {
 
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <Link href="/">
+          <Link href="/choose-language?section=reading&lang=en">
             <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
-              ← Home
+              ← Back
             </button>
           </Link>
           <h1 className="text-5xl font-bold text-white drop-shadow-lg">Speaking Practice - Numbers</h1>

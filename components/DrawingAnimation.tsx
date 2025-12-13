@@ -24,6 +24,7 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
   const gifFramesRef = useRef<any[]>([]);
   const gifAnimationRef = useRef<number | null>(null);
   const [isGifLoaded, setIsGifLoaded] = useState(false);
+  const [animationCount, setAnimationCount] = useState(0);
 
   // SVG path data for stroke-order animations
   // These paths are designed to match Tesseract's expected character shapes
@@ -291,6 +292,73 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
       ]
     };
 
+    // Tamil vowels - Traditional stroke order
+    const tamilVowelPaths: Record<string, { path: string; delay: number }[]> = {
+      'அ': [
+        { path: 'M100,120 Q150,80 200,120', delay: 0 },
+        { path: 'M150,120 L150,170', delay: 300 }
+      ],
+      'ஆ': [
+        { path: 'M100,120 Q150,80 200,120', delay: 0 },
+        { path: 'M150,120 L150,170', delay: 300 },
+        { path: 'M170,90 Q190,80 210,90 Q220,100 210,110 Q190,120 170,110', delay: 600 }
+      ],
+      'இ': [
+        { path: 'M120,90 Q100,70 80,90 Q100,110 120,90', delay: 0 },
+        { path: 'M120,90 L170,90 L170,170', delay: 300 }
+      ],
+      'ஈ': [
+        { path: 'M120,90 Q100,70 80,90 Q100,110 120,90', delay: 0 },
+        { path: 'M120,90 L170,90 L170,170', delay: 300 },
+        { path: 'M190,70 Q210,60 230,70 Q240,80 230,90 Q210,100 190,90', delay: 600 }
+      ],
+      'உ': [
+        { path: 'M120,120 Q150,90 180,120 Q180,150 150,170 Q120,150 120,120', delay: 0 },
+        { path: 'M150,120 L150,190', delay: 300 }
+      ],
+      'ஊ': [
+        { path: 'M120,120 Q150,90 180,120 Q180,150 150,170 Q120,150 120,120', delay: 0 },
+        { path: 'M150,120 L150,190', delay: 300 },
+        { path: 'M200,100 Q220,90 240,100 Q250,110 240,120 Q220,130 200,120', delay: 600 }
+      ],
+      'எ': [
+        { path: 'M150,80 Q180,60 210,80 Q190,100 160,120 Q130,100 150,80', delay: 0 },
+        { path: 'M160,120 L160,170', delay: 300 }
+      ],
+      'ஏ': [
+        { path: 'M150,80 Q180,60 210,80 Q190,100 160,120 Q130,100 150,80', delay: 0 },
+        { path: 'M160,120 L160,170', delay: 300 },
+        { path: 'M230,60 Q250,50 270,60 Q280,70 270,80 Q250,90 230,80', delay: 600 }
+      ],
+      'ஐ': [
+        { path: 'M120,90 Q100,70 80,90 Q100,110 120,90', delay: 0 },
+        { path: 'M150,80 Q180,60 210,80 Q190,100 160,120 Q130,100 150,80', delay: 300 },
+        { path: 'M160,120 L160,170', delay: 600 }
+      ],
+      'ஒ': [
+        { path: 'M130,120 Q160,90 190,120 Q160,150 130,120', delay: 0 },
+        { path: 'M100,80 Q80,70 60,80 Q80,90 100,80', delay: 300 },
+        { path: 'M160,120 L160,170', delay: 600 }
+      ],
+      'ஓ': [
+        { path: 'M130,120 Q160,90 190,120 Q160,150 130,120', delay: 0 },
+        { path: 'M100,80 Q80,70 60,80 Q80,90 100,80', delay: 300 },
+        { path: 'M160,120 L160,170', delay: 600 },
+        { path: 'M210,60 Q230,50 250,60 Q260,70 250,80 Q230,90 210,80', delay: 900 }
+      ],
+      'ஔ': [
+        { path: 'M100,80 Q80,70 60,80 Q80,90 100,80', delay: 0 },
+        { path: 'M130,120 Q160,90 190,120 Q160,150 130,120', delay: 300 },
+        { path: 'M150,80 Q180,60 210,80 Q190,100 160,120 Q130,100 150,80', delay: 600 },
+        { path: 'M160,120 L160,170', delay: 900 }
+      ]
+    };
+
+    // Check for Tamil vowel first
+    if (tamilVowelPaths[char]) {
+      return tamilVowelPaths[char];
+    }
+
     // Check if it's a number first
     if (numberPaths[char]) {
       return numberPaths[char];
@@ -375,11 +443,13 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    // Clear canvas and reset state for new animation
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw guide lines for small letters
     const isLowerCase = character === character.toLowerCase() && character !== character.toUpperCase();
+    const isTamilVowel = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ'].includes(character);
+    
     if (isLowerCase) {
       // Draw baseline (where letters sit)
       ctx.strokeStyle = '#E0E0E0';
@@ -395,6 +465,25 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
       ctx.moveTo(80, 95);
       ctx.lineTo(220, 95);
       ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (isTamilVowel) {
+      // Draw Tamil vowel guide lines
+      ctx.strokeStyle = '#FFE6CC';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      
+      // Center horizontal line
+      ctx.beginPath();
+      ctx.moveTo(50, 120);
+      ctx.lineTo(250, 120);
+      ctx.stroke();
+      
+      // Center vertical line
+      ctx.beginPath();
+      ctx.moveTo(150, 50);
+      ctx.lineTo(150, 190);
+      ctx.stroke();
+      
       ctx.setLineDash([]);
     }
 
@@ -417,6 +506,13 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
     const animate = () => {
       if (currentPathIndex >= paths.length) {
         setIsPlaying(false);
+        // Start continuous loop after 1 second delay
+        setTimeout(() => {
+          if (isVisible) {
+            setAnimationCount(prev => prev + 1);
+            animateDrawing();
+          }
+        }, 1000);
         return;
       }
 
@@ -463,7 +559,9 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
   const handlePlay = () => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
+    setAnimationCount(0);
     animateDrawing();
   };
 
@@ -484,7 +582,7 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
     }
   };
 
-  // Play GIF with custom speed
+  // Play GIF with custom speed - continuous loop
   const playGif = () => {
     const canvas = gifCanvasRef.current;
     if (!canvas || gifFramesRef.current.length === 0) return;
@@ -500,6 +598,8 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
     let lastFrameTime = Date.now();
 
     const renderFrame = () => {
+      if (!isVisible) return; // Stop if modal is closed
+      
       const currentTime = Date.now();
       const frame = frames[frameIndex];
 
@@ -554,16 +654,24 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
     const gifConfig = GIF_ANIMATIONS[character];
     if (gifConfig && isVisible) {
       setIsGifLoaded(false);
+      // Clear any existing GIF animation
+      if (gifAnimationRef.current) {
+        cancelAnimationFrame(gifAnimationRef.current);
+        gifAnimationRef.current = null;
+      }
+      gifFramesRef.current = [];
       loadGif(gifConfig.path);
     }
 
     return () => {
       if (gifAnimationRef.current) {
         cancelAnimationFrame(gifAnimationRef.current);
+        gifAnimationRef.current = null;
       }
     };
   }, [character, isVisible]);
 
+  // Auto-start animation when modal becomes visible
   useEffect(() => {
     if (isVisible) {
       const canvas = canvasRef.current;
@@ -573,12 +681,31 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
           ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
       }
+      
+      // Reset animation state for new character
+      setIsPlaying(false);
+      setAnimationCount(0);
+      
+      // Auto-start animation if no GIF is available
+      const gifConfig = GIF_ANIMATIONS[character];
+      if (!gifConfig) {
+        setTimeout(() => {
+          handlePlay();
+        }, 100); // Small delay to ensure canvas is ready
+      }
     }
 
     return () => {
+      // Clean up all animations when modal closes or character changes
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
+      if (gifAnimationRef.current) {
+        cancelAnimationFrame(gifAnimationRef.current);
+        gifAnimationRef.current = null;
+      }
+      setIsPlaying(false);
     };
   }, [isVisible, character]);
 
@@ -588,10 +715,13 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
   const isNumber = /\d/.test(character);
   const isUpperCase = character === character.toUpperCase() && character !== character.toLowerCase();
   const isLowerCase = character === character.toLowerCase() && character !== character.toUpperCase();
+  const isTamilVowel = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ'].includes(character);
 
   let characterType = '';
   if (isNumber) {
     characterType = 'Number';
+  } else if (isTamilVowel) {
+    characterType = 'Tamil Vowel';
   } else if (isUpperCase) {
     characterType = 'Capital Letter';
   } else if (isLowerCase) {
@@ -608,7 +738,7 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-3xl font-bold text-gray-800">
-              How to Draw: <span className="text-blue-600">{character}</span>
+              How to Write: <span className="text-blue-600">{character}</span>
             </h2>
             {characterType && (
               <p className="text-sm text-gray-500 mt-1">{characterType}</p>
@@ -665,18 +795,11 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
             </button>
           </div>
         ) : (
-          /* Canvas Animation Controls */
+          /* Canvas Animation Controls - Auto-playing */
           <div className="flex gap-4">
             <button
-              onClick={handlePlay}
-              disabled={isPlaying}
-              className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg font-bold text-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
-            >
-              {isPlaying ? '▶ Playing...' : '▶ Play Animation'}
-            </button>
-            <button
               onClick={onClose}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg font-bold text-lg hover:bg-gray-600 transition-colors shadow-lg"
+              className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg font-bold text-lg hover:bg-gray-600 transition-colors shadow-lg"
             >
               Close
             </button>
@@ -685,8 +808,19 @@ export default function DrawingAnimation({ character, isVisible, onClose }: Draw
 
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-gray-700">
-            <strong>Tip:</strong> {hasGifAnimation ? 'Watch the sped-up animation to learn how to write this letter correctly.' : 'Follow the animation carefully. Draw slowly and clearly for best recognition results.'}
+            <strong>Tip:</strong> {
+              hasGifAnimation 
+                ? 'Watch the continuous sped-up animation to learn how to write this letter correctly.'
+                : isTamilVowel
+                ? 'Follow the stroke order for Tamil vowels. The dotted guidelines help position the curves and strokes correctly. Tamil writing flows with curved forms.'
+                : 'The animation plays continuously. Follow it carefully and write slowly and clearly for best recognition results.'
+            }
           </p>
+          {!hasGifAnimation && animationCount > 0 && (
+            <p className="text-xs text-gray-500 mt-1">
+              Animation loop: {animationCount + 1}
+            </p>
+          )}
         </div>
       </div>
     </div>

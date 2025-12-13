@@ -12,6 +12,7 @@ interface TestResults {
   allMastered?: boolean;
   type?: 'writing' | 'reading';
   subtype?: 'letters' | 'numbers';
+  letterType?: 'capital' | 'small';
 }
 
 export default function ResultsPage() {
@@ -38,6 +39,10 @@ export default function ResultsPage() {
         router.push('/corrected-test/numbers');
       } else {
         localStorage.setItem('correctedTestLetters', JSON.stringify(results.wrongAnswers));
+        // Store letterType information for the corrected test
+        if (results.letterType) {
+          localStorage.setItem('correctedTestLetterType', results.letterType);
+        }
         router.push('/corrected-test'); // Default to letters writing
       }
     }

@@ -35,7 +35,7 @@ const DrawingCanvas = forwardRef<DrawingCanvasRef, DrawingCanvasProps>(({
         
         // Set white stroke for drawing
         ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 20; // Thicker stroke for better recognition
+        ctx.lineWidth = 14; // Increased stroke width for better visibility
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         setContext(ctx);
@@ -128,13 +128,6 @@ const DrawingCanvas = forwardRef<DrawingCanvasRef, DrawingCanvasProps>(({
         onTouchMove={draw}
         onTouchEnd={stopDrawing}
       />
-      <button
-        onClick={clearCanvas}
-        disabled={!isEnabled}
-        className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-      >
-        Clear
-      </button>
     </div>
   );
 });

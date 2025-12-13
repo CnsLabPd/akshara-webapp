@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇮🇳', description: 'Learn English alphabets and pronunciation' },
   { code: 'hi', name: 'Hindi', flag: '🇮🇳', description: 'Coming Soon!', disabled: true },
-  { code: 'ta', name: 'Tamil', flag: '🇮🇳', description: 'Coming Soon!', disabled: true },
+  { code: 'ta', name: 'Tamil', flag: '🇮🇳', description: 'Learn Tamil vowels and consonants' },
 ];
 
 export default function ChooseLanguage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [selectedSubsection, setSelectedSubsection] = useState<string>('');
@@ -29,7 +30,44 @@ export default function ChooseLanguage() {
       duration: `${4 + Math.random() * 2}s`
     }));
     setFloatingLetters(letters);
-  }, []);
+
+    // Read URL parameters to set initial state
+    const section = searchParams.get('section');
+    const subsection = searchParams.get('subsection');
+    const lang = searchParams.get('lang');
+    
+    if (section) {
+      // Set language and section from URL parameters
+      setSelectedLanguage(lang || 'en');
+      setSelectedSection(section);
+      if (subsection) {
+        setSelectedSubsection(subsection);
+      }
+    }
+  }, [searchParams]);
+
+  // Auto-redirect for reading sections only when subsection is selected
+  useEffect(() => {
+    if (selectedSection === 'reading' && selectedSubsection && selectedLanguage) {
+      let targetUrl = '';
+      
+      if (selectedLanguage === 'ta') {
+        // Tamil reading redirects
+        targetUrl = selectedSubsection === 'vowels'
+          ? `/reading/practice/tamil-alphabets?lang=${selectedLanguage}`
+          : selectedSubsection === 'consonants'
+          ? `/reading/practice/tamil-consonants?lang=${selectedLanguage}`
+          : `/reading/practice/numbers?lang=${selectedLanguage}`;
+      } else {
+        // English reading redirects
+        targetUrl = selectedSubsection === 'alphabets'
+          ? `/reading/practice?lang=${selectedLanguage}`
+          : `/reading/practice/numbers?lang=${selectedLanguage}`;
+      }
+      
+      router.push(targetUrl);
+    }
+  }, [selectedSection, selectedSubsection, selectedLanguage, router]);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 relative overflow-hidden">
@@ -222,83 +260,117 @@ export default function ChooseLanguage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {/* Writing: 3 options, Speaking: 3 options */}
               {selectedSection === 'writing' ? (
-                <>
-                  {/* Capital Alphabets */}
-                  <div
-                    onClick={() => setSelectedSubsection('capital')}
-                    className="group p-8 bg-gradient-to-br from-violet-600/40 to-purple-700/50 backdrop-blur-sm border-2 border-violet-300/50 text-white rounded-3xl hover:from-violet-500/50 hover:to-purple-600/60 hover:border-violet-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-violet-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-violet-200 to-purple-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-violet-100 to-purple-100 bg-clip-text text-transparent">Capital Alphabets</h3>
-                    <p className="text-center text-violet-100">A to Z</p>
-                  </div>
+                selectedLanguage === 'ta' ? (
+                  <>
+                    {/* Tamil Vowels */}
+                    <div
+                      onClick={() => setSelectedSubsection('capital')}
+                      className="group p-8 bg-gradient-to-br from-violet-600/40 to-purple-700/50 backdrop-blur-sm border-2 border-violet-300/50 text-white rounded-3xl hover:from-violet-500/50 hover:to-purple-600/60 hover:border-violet-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-violet-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-violet-200 to-purple-200 bg-clip-text text-transparent filter drop-shadow-lg">அ</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-violet-100 to-purple-100 bg-clip-text text-transparent">Vowels</h3>
+                      <p className="text-center text-violet-100">உயிரெழுத்துக்கள்</p>
+                    </div>
 
-                  {/* Small Alphabets */}
-                  <div
-                    onClick={() => setSelectedSubsection('small')}
-                    className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">abc</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Small Alphabets</h3>
-                    <p className="text-center text-emerald-100">a to z</p>
-                  </div>
+                    {/* Tamil Consonants */}
+                    <div
+                      onClick={() => setSelectedSubsection('small')}
+                      className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">க</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Consonants</h3>
+                      <p className="text-center text-emerald-100">மெய்யெழுத்துக்கள்</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Capital Alphabets */}
+                    <div
+                      onClick={() => setSelectedSubsection('capital')}
+                      className="group p-8 bg-gradient-to-br from-violet-600/40 to-purple-700/50 backdrop-blur-sm border-2 border-violet-300/50 text-white rounded-3xl hover:from-violet-500/50 hover:to-purple-600/60 hover:border-violet-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-violet-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-violet-200 to-purple-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-violet-100 to-purple-100 bg-clip-text text-transparent">Capital Alphabets</h3>
+                      <p className="text-center text-violet-100">A to Z</p>
+                    </div>
 
-                  {/* Numbers */}
-                  <div
-                    onClick={() => setSelectedSubsection('numbers')}
-                    className="group p-8 bg-gradient-to-br from-amber-600/40 to-orange-700/50 backdrop-blur-sm border-2 border-amber-300/50 text-white rounded-3xl hover:from-amber-500/50 hover:to-orange-600/60 hover:border-amber-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-amber-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-amber-100 to-orange-100 bg-clip-text text-transparent">Numbers</h3>
-                    <p className="text-center text-amber-100">0 to 9</p>
-                  </div>
-                </>
+                    {/* Small Alphabets */}
+                    <div
+                      onClick={() => setSelectedSubsection('small')}
+                      className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">abc</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Small Alphabets</h3>
+                      <p className="text-center text-emerald-100">a to z</p>
+                    </div>
+
+                    {/* Numbers */}
+                    <div
+                      onClick={() => setSelectedSubsection('numbers')}
+                      className="group p-8 bg-gradient-to-br from-amber-600/40 to-orange-700/50 backdrop-blur-sm border-2 border-amber-300/50 text-white rounded-3xl hover:from-amber-500/50 hover:to-orange-600/60 hover:border-amber-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-amber-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-amber-100 to-orange-100 bg-clip-text text-transparent">Numbers</h3>
+                      <p className="text-center text-amber-100">0 to 9</p>
+                    </div>
+                  </>
+                )
               ) : (
-                <>
-                  {/* Learn Alphabets for Speaking */}
-                  <div
-                    onClick={() => setSelectedSubsection('learn')}
-                    className="group p-8 bg-gradient-to-br from-indigo-600/40 to-blue-700/50 backdrop-blur-sm border-2 border-indigo-300/50 text-white rounded-3xl hover:from-indigo-500/50 hover:to-blue-600/60 hover:border-indigo-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-indigo-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-bounce filter drop-shadow-lg">🎓</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-indigo-100 to-blue-100 bg-clip-text text-transparent">Learn Alphabets</h3>
-                    <p className="text-center text-indigo-100">Interactive Learning</p>
-                  </div>
+                selectedLanguage === 'ta' ? (
+                  <>
 
-                  {/* Alphabets for Speaking */}
-                  <div
-                    onClick={() => setSelectedSubsection('alphabets')}
-                    className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Alphabets</h3>
-                    <p className="text-center text-sky-100">A to Z</p>
-                  </div>
+                    {/* Tamil Vowels for Speaking */}
+                    <div
+                      onClick={() => setSelectedSubsection('vowels')}
+                      className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">அ</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Tamil Vowels</h3>
+                      <p className="text-center text-sky-100">உயிர் எழுத்துக்கள்</p>
+                    </div>
 
-                  {/* Numbers for Speaking */}
-                  <div
-                    onClick={() => setSelectedSubsection('numbers')}
-                    className="group p-8 bg-gradient-to-br from-rose-600/40 to-pink-700/50 backdrop-blur-sm border-2 border-rose-300/50 text-white rounded-3xl hover:from-rose-500/50 hover:to-pink-600/60 hover:border-rose-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-rose-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-rose-200 to-pink-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-rose-100 to-pink-100 bg-clip-text text-transparent">Numbers</h3>
-                    <p className="text-center text-rose-100">0 to 9</p>
-                  </div>
-                </>
+                    {/* Tamil Consonants for Speaking */}
+                    <div
+                      onClick={() => setSelectedSubsection('consonants')}
+                      className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">க</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Tamil Consonants</h3>
+                      <p className="text-center text-emerald-100">மெய் எழுத்துக்கள்</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+
+                    {/* Alphabets for Speaking */}
+                    <div
+                      onClick={() => setSelectedSubsection('alphabets')}
+                      className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Alphabets</h3>
+                      <p className="text-center text-sky-100">A to Z</p>
+                    </div>
+
+                    {/* Numbers for Speaking */}
+                    <div
+                      onClick={() => setSelectedSubsection('numbers')}
+                      className="group p-8 bg-gradient-to-br from-rose-600/40 to-pink-700/50 backdrop-blur-sm border-2 border-rose-300/50 text-white rounded-3xl hover:from-rose-500/50 hover:to-pink-600/60 hover:border-rose-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-rose-500/30"
+                    >
+                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-rose-200 to-pink-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
+                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-rose-100 to-pink-100 bg-clip-text text-transparent">Numbers</h3>
+                      <p className="text-center text-rose-100">0 to 9</p>
+                    </div>
+                  </>
+                )
               )}
             </div>
           </div>
-        ) : (
-          /* Mode Selection (Practice or Test) */
+        ) : selectedSection === 'writing' ? (
+          /* Mode Selection (Practice or Test) for Writing only */
           <div className="animate-fade-in-up">
             <button
-              onClick={() => {
-                if (selectedSection === 'writing' || selectedSection === 'reading') {
-                  setSelectedSubsection('');
-                } else {
-                  setSelectedSection('');
-                }
-              }}
+              onClick={() => setSelectedSubsection('')}
               className="mb-8 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-white/30 transition-all duration-300 border border-white/30"
             >
               ← Back
@@ -316,17 +388,11 @@ export default function ChooseLanguage() {
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* Practice Mode */}
               <Link href={
-                selectedSection === 'writing'
-                  ? selectedSubsection === 'capital'
-                    ? '/practice'
-                    : selectedSubsection === 'small'
-                    ? '/practice/small'
-                    : '/practice/numbers'
-                  : selectedSubsection === 'learn'
-                    ? '/reading/learn/practice'
-                    : selectedSubsection === 'alphabets'
-                    ? '/reading/practice'
-                    : '/reading/practice/numbers'
+                selectedSubsection === 'capital'
+                  ? `/practice?lang=${selectedLanguage}`
+                  : selectedSubsection === 'small'
+                  ? `/practice/small?lang=${selectedLanguage}`
+                  : `/practice/numbers?lang=${selectedLanguage}`
               }>
                 <div className="group p-10 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30">
                   <div className="text-8xl mb-6 text-center group-hover:animate-bounce filter drop-shadow-lg">✏️</div>
@@ -354,17 +420,11 @@ export default function ChooseLanguage() {
 
               {/* Test Mode */}
               <Link href={
-                selectedSection === 'writing'
-                  ? selectedSubsection === 'capital'
-                    ? '/test'
-                    : selectedSubsection === 'small'
-                    ? '/test/small'
-                    : '/test/numbers'
-                  : selectedSubsection === 'learn'
-                    ? '/reading/learn/test'
-                    : selectedSubsection === 'alphabets'
-                    ? '/reading/test'
-                    : '/reading/test/numbers'
+                selectedSubsection === 'capital'
+                  ? `/test?lang=${selectedLanguage}`
+                  : selectedSubsection === 'small'
+                  ? `/test/small?lang=${selectedLanguage}`
+                  : `/test/numbers?lang=${selectedLanguage}`
               }>
                 <div className="group p-10 bg-gradient-to-br from-orange-600/40 to-red-700/50 backdrop-blur-sm border-2 border-orange-300/50 text-white rounded-3xl hover:from-orange-500/50 hover:to-red-600/60 hover:border-orange-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-orange-500/30">
                   <div className="text-8xl mb-6 text-center group-hover:animate-bounce filter drop-shadow-lg">📝</div>
@@ -391,7 +451,7 @@ export default function ChooseLanguage() {
               </Link>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Info Section */}
         <div className="mt-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 animate-fade-in-up" style={{animationDelay: '1.2s'}}>

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { pronunciationDataCollector } from '@/utils/pronunciationDataCollector';
 
-const ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+// Tamil Consonants (மெய்)
+const TAMIL_CONSONANTS = ['க', 'ங', 'ச', 'ஞ', 'ட', 'ண', 'த', 'ந', 'ப', 'ம', 'ய', 'ர', 'ல', 'வ', 'ழ', 'ள', 'ற', 'ன'];
 
-export default function ReadingPracticePage() {
+export default function TamilConsonantsReadingPracticePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isListening, setIsListening] = useState(false);
@@ -32,44 +33,37 @@ export default function ReadingPracticePage() {
       }
 
       const recognition = new SpeechRecognition();
-      recognition.continuous = true; // Keep listening for continuous speech
-      recognition.interimResults = true; // Enable interim results for real-time feedback
-      recognition.lang = 'en-IN';
-      recognition.maxAlternatives = 5; // Get more alternatives for better single letter accuracy
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'ta-IN'; // Tamil language
+      recognition.maxAlternatives = 5;
 
       let lastSpeechTime = 0;
       let silenceTimer: any = null;
       let detectedTranscript = '';
 
       recognition.onresult = (event: any) => {
-        // Update last speech time
         lastSpeechTime = Date.now();
 
-        // Clear any existing silence timer
         if (silenceTimer) {
           clearTimeout(silenceTimer);
           silenceTimer = null;
         }
 
-        // Process all results including alternatives
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
 
-          // Check all alternatives for better single letter detection
           for (let j = 0; j < Math.min(result.length, 5); j++) {
-            const transcript = result[j].transcript.toUpperCase().trim();
+            const transcript = result[j].transcript.trim();
 
             if (transcript) {
-              console.log(`Alternative ${j + 1}:`, transcript, 'Confidence:', result[j].confidence);
+              console.log(`Tamil Consonant Alternative ${j + 1}:`, transcript, 'Confidence:', result[j].confidence);
 
-              // Accept both interim and final results
               if (result.isFinal || result[j].confidence > 0.3) {
                 detectedTranscript = transcript;
                 setCurrentTranscript(transcript);
 
-                // Start 2-second pause timer after detecting speech
                 silenceTimer = setTimeout(() => {
-                  // After 2 seconds of silence, stop recording and mark as recorded
                   if (recognitionRef.current) {
                     recognitionRef.current.stop();
                     setHasRecorded(true);
@@ -87,10 +81,8 @@ export default function ReadingPracticePage() {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
 
-        // Don't show error for 'no-speech' immediately - user might be trying
         if (event.error === 'no-speech') {
           setFeedback('No speech detected. Please speak louder and try again!');
-          // Allow retry without resetting everything
           setTimeout(() => {
             if (!hasRecorded) {
               setFeedback('');
@@ -99,7 +91,6 @@ export default function ReadingPracticePage() {
         } else if (event.error === 'not-allowed') {
           setFeedback('Microphone access denied. Please allow microphone access.');
         } else if (event.error === 'aborted') {
-          // Ignore aborted errors (usually from user clicking stop)
           return;
         } else {
           setFeedback('Error occurred. Please try again.');
@@ -108,12 +99,10 @@ export default function ReadingPracticePage() {
 
       recognition.onend = () => {
         setIsListening(false);
-        // Clear silence timer if recording ends
         if (silenceTimer) {
           clearTimeout(silenceTimer);
           silenceTimer = null;
         }
-        // Reset variables for next recognition
         lastSpeechTime = 0;
         detectedTranscript = '';
       };
@@ -128,10 +117,11 @@ export default function ReadingPracticePage() {
     };
   }, []);
 
-  // Initialize data collection session
+  // Initialize data collection session for Tamil consonants
   useEffect(() => {
     const initDataCollection = () => {
-      const id = pronunciationDataCollector.initSession('english-alphabets');
+      // Update the pronunciation data collector to handle Tamil consonants
+      const id = pronunciationDataCollector.initSession('tamil-consonants' as any);
       setSessionId(id);
       setIsDataCollectionMode(true);
       updateCollectionStats();
@@ -146,39 +136,39 @@ export default function ReadingPracticePage() {
     setCollectionStats(stats);
   };
 
-  // Find next letter that needs data collection
-  const findNextLetterNeedingCollection = (): number => {
-    for (let i = 0; i < ALPHABETS.length; i++) {
-      if (pronunciationDataCollector.needsCollection(ALPHABETS[i])) {
+  // Find next Tamil consonant that needs data collection
+  const findNextConsonantNeedingCollection = (): number => {
+    for (let i = 0; i < TAMIL_CONSONANTS.length; i++) {
+      if (pronunciationDataCollector.needsCollection(TAMIL_CONSONANTS[i])) {
         return i;
       }
     }
-    return -1; // All letters have been collected
+    return -1; // All consonants have been collected
   };
 
-  const currentLetter = ALPHABETS[currentIndex];
+  const currentConsonant = TAMIL_CONSONANTS[currentIndex];
 
   const handleSubmit = async () => {
     if (!hasRecorded) return;
 
-    // Improved matching for single letters
-    const isCorrect = checkLetterMatch(currentTranscript, currentLetter);
+    // Tamil consonant matching
+    const isCorrect = checkTamilConsonantMatch(currentTranscript, currentConsonant);
 
     // Collect pronunciation data if in data collection mode
     if (isDataCollectionMode && isRecordingAudio) {
       try {
         const audioData = await pronunciationDataCollector.stopRecording();
-        const expectedPronunciation = getLetterPronunciation(currentLetter);
+        const expectedPronunciation = getTamilConsonantPronunciation(currentConsonant);
         
         const stored = await pronunciationDataCollector.storePronunciationData(
-          currentLetter,
+          currentConsonant,
           expectedPronunciation,
           currentTranscript,
           audioData
         );
 
         if (stored) {
-          setFeedback('Data collected successfully! Thank you for contributing.');
+          setFeedback('Tamil consonant data collected successfully! Thank you for contributing.');
           updateCollectionStats();
           
           // Send to API
@@ -187,29 +177,29 @@ export default function ReadingPracticePage() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                character: currentLetter,
+                character: currentConsonant,
                 expectedPronunciation,
                 transcript: currentTranscript,
                 userAudio: audioData,
                 sessionId,
-                attemptNumber: pronunciationDataCollector.getCurrentAttemptNumber(currentLetter),
-                practiceType: 'english-alphabets'
+                attemptNumber: pronunciationDataCollector.getCurrentAttemptNumber(currentConsonant),
+                practiceType: 'tamil-consonants'
               })
             });
             
             if (response.ok) {
-              console.log('Pronunciation data sent to server successfully');
+              console.log('Tamil consonant pronunciation data sent to server successfully');
             }
           } catch (apiError) {
-            console.error('Error sending to API:', apiError);
+            console.error('Error sending Tamil consonant data to API:', apiError);
           }
         } else {
-          setFeedback('Data already collected for this letter (2 times)');
+          setFeedback('Data already collected for this Tamil consonant (2 times)');
         }
         
         setIsRecordingAudio(false);
       } catch (error) {
-        console.error('Error collecting pronunciation data:', error);
+        console.error('Error collecting Tamil consonant pronunciation data:', error);
         setFeedback('Error collecting data. Please try again.');
         setIsRecordingAudio(false);
       }
@@ -222,7 +212,7 @@ export default function ReadingPracticePage() {
 
         setTimeout(() => {
           setShowCelebration(false);
-          if (currentIndex < ALPHABETS.length - 1) {
+          if (currentIndex < TAMIL_CONSONANTS.length - 1) {
             setCurrentIndex(currentIndex + 1);
             setFeedback('');
             setHasRecorded(false);
@@ -230,14 +220,14 @@ export default function ReadingPracticePage() {
           }
         }, 2500);
       } else {
-        setFeedback(`Try again! Say the letter "${currentLetter}"`);
+        setFeedback(`Try again! Say the Tamil consonant "${currentConsonant}"`);
       }
     }
 
-    // Auto-advance to next letter that needs collection
+    // Auto-advance to next consonant that needs collection
     if (isDataCollectionMode) {
       setTimeout(() => {
-        const nextIndex = findNextLetterNeedingCollection();
+        const nextIndex = findNextConsonantNeedingCollection();
         if (nextIndex !== -1) {
           setCurrentIndex(nextIndex);
           setFeedback('');
@@ -248,56 +238,47 @@ export default function ReadingPracticePage() {
     }
   };
 
-  // Simple letter pronunciation matching function
-  const checkLetterMatch = (transcript: string, expectedLetter: string): boolean => {
-    // Clean up transcript - remove extra spaces and convert to uppercase
-    const cleanTranscript = transcript.toUpperCase().trim().replace(/\s+/g, ' ');
+  // Tamil consonant pronunciation matching function
+  const checkTamilConsonantMatch = (transcript: string, expectedConsonant: string): boolean => {
+    const cleanTranscript = transcript.trim();
 
-    console.log('=== MATCHING DEBUG ===');
+    console.log('=== TAMIL CONSONANT MATCHING DEBUG ===');
     console.log('User said:', `"${cleanTranscript}"`);
-    console.log('Expected letter:', expectedLetter);
+    console.log('Expected Tamil consonant:', expectedConsonant);
 
-    // Method 1: Direct exact match with the letter itself
-    if (cleanTranscript === expectedLetter) {
-      console.log('✅ Match found: Exact letter match');
+    // Direct match with the Tamil consonant
+    if (cleanTranscript === expectedConsonant) {
+      console.log('✅ Match found: Exact Tamil consonant match');
       return true;
     }
 
-    // Method 2: Match with standard pronunciation (letter alone)
-    const pronunciationVariants: { [key: string]: string[] } = {
-      'A': ['AY'],
-      'B': ['BEE'],
-      'C': ['SEE', 'CEE'],
-      'D': ['DEE'],
-      'E': ['EE'],
-      'F': ['EFF', 'EF'],
-      'G': ['GEE', 'JEE'],
-      'H': ['AITCH', 'EICH'],
-      'I': ['EYE', 'AI'],
-      'J': ['JAY', 'JEY'],
-      'K': ['KAY', 'KEY'],
-      'L': ['ELL', 'EL'],
-      'M': ['EM'],
-      'N': ['EN'],
-      'O': ['OH', 'OW'],
-      'P': ['PEE', 'PE'],
-      'Q': ['CUE', 'KYU', 'KYOU'],
-      'R': ['ARE', 'AR'],
-      'S': ['ESS', 'ES'],
-      'T': ['TEE', 'TE'],
-      'U': ['YOU', 'YU', 'YOO'],
-      'V': ['VEE', 'VE'],
-      'W': ['DOUBLE YOU', 'DOUBLEYOU', 'DOUBLE U'],
-      'X': ['EX', 'EKS'],
-      'Y': ['WHY', 'WYE'],
-      'Z': ['ZEE', 'ZED'],
+    // Match with romanized pronunciation
+    const tamilConsonantPronunciationMap: { [key: string]: string[] } = {
+      'க': ['ka', 'க'],
+      'ங': ['nga', 'ங'],
+      'ச': ['cha', 'sa', 'ச'],
+      'ஞ': ['nya', 'nja', 'ஞ'],
+      'ட': ['ta', 'da', 'ட'],
+      'ண': ['na', 'ண'],
+      'த': ['tha', 'th', 'த'],
+      'ந': ['na', 'ந'],
+      'ப': ['pa', 'ba', 'ப'],
+      'ம': ['ma', 'ம'],
+      'ய': ['ya', 'ய'],
+      'ர': ['ra', 'ர'],
+      'ல': ['la', 'ல'],
+      'வ': ['va', 'wa', 'வ'],
+      'ழ': ['zha', 'la', 'ழ'],
+      'ள': ['la', 'ள'],
+      'ற': ['ra', 'ற'],
+      'ன': ['na', 'ன']
     };
 
-    const validPronunciations = pronunciationVariants[expectedLetter] || [];
-
+    const validPronunciations = tamilConsonantPronunciationMap[expectedConsonant] || [];
+    
     const pronunciationMatched = validPronunciations.some(pronunciation => {
-      if (cleanTranscript === pronunciation) {
-        console.log(`✅ Match found: Exact pronunciation match with "${pronunciation}"`);
+      if (cleanTranscript.toLowerCase() === pronunciation.toLowerCase()) {
+        console.log(`✅ Tamil consonant match found: pronunciation match with "${pronunciation}"`);
         return true;
       }
       return false;
@@ -307,10 +288,8 @@ export default function ReadingPracticePage() {
       return true;
     }
 
-    console.log('❌ No match found.');
-    console.log('Valid options:');
-    console.log(`  - "${expectedLetter}"`);
-    console.log(`  - ${validPronunciations.map(p => `"${p}"`).join(', ')}`);
+    console.log('❌ No Tamil consonant match found.');
+    console.log('Valid options:', validPronunciations);
     return false;
   };
 
@@ -321,13 +300,13 @@ export default function ReadingPracticePage() {
       setIsListening(true);
 
       // Start audio recording for data collection
-      if (isDataCollectionMode && pronunciationDataCollector.needsCollection(currentLetter)) {
+      if (isDataCollectionMode && pronunciationDataCollector.needsCollection(currentConsonant)) {
         try {
           await pronunciationDataCollector.startRecording();
           setIsRecordingAudio(true);
-          setFeedback('Recording for data collection...');
+          setFeedback('Recording Tamil consonant pronunciation for data collection...');
         } catch (error) {
-          console.error('Error starting audio recording:', error);
+          console.error('Error starting Tamil consonant audio recording:', error);
           setFeedback('Error starting audio recording. Please try again.');
         }
       }
@@ -335,71 +314,51 @@ export default function ReadingPracticePage() {
       try {
         recognitionRef.current.start();
       } catch (error) {
-        console.error('Error starting recognition:', error);
+        console.error('Error starting Tamil consonant recognition:', error);
         setIsListening(false);
         setFeedback('Error starting microphone. Please try again.');
       }
     }
   };
 
-  const playLetterSound = () => {
-    // Use browser's speech synthesis to pronounce just the letter
+  const playTamilConsonantSound = () => {
+    // Use browser's speech synthesis to pronounce the Tamil consonant
     if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(currentLetter);
-      utterance.rate = 0.8; // Slower speech for clarity
-      utterance.pitch = 1.2; // Slightly higher pitch for children
-      utterance.lang = 'en-US';
+      const utterance = new SpeechSynthesisUtterance(currentConsonant);
+      utterance.rate = 0.8;
+      utterance.pitch = 1.2;
+      utterance.lang = 'ta-IN'; // Tamil language
       window.speechSynthesis.speak(utterance);
     }
   };
 
-  // Helper function to get pronunciation guide
-  const getLetterPronunciation = (letter: string): string => {
-    const pronunciationMap: { [key: string]: string } = {
-      'A': 'ay', 'B': 'bee', 'C': 'see', 'D': 'dee', 'E': 'ee',
-      'F': 'ef', 'G': 'gee', 'H': 'aitch', 'I': 'eye', 'J': 'jay',
-      'K': 'kay', 'L': 'el', 'M': 'em', 'N': 'en', 'O': 'oh',
-      'P': 'pee', 'Q': 'cue', 'R': 'are', 'S': 'ess', 'T': 'tee',
-      'U': 'you', 'V': 'vee', 'W': 'double-u', 'X': 'ex', 'Y': 'why', 'Z': 'zee'
+  // Helper function to get Tamil consonant pronunciation
+  const getTamilConsonantPronunciation = (consonant: string): string => {
+    const tamilConsonantPronunciationMap: { [key: string]: string } = {
+      'க': 'ka',
+      'ங': 'nga',
+      'ச': 'cha',
+      'ஞ': 'nya',
+      'ட': 'ta',
+      'ண': 'na',
+      'த': 'tha',
+      'ந': 'na',
+      'ப': 'pa',
+      'ம': 'ma',
+      'ய': 'ya',
+      'ர': 'ra',
+      'ல': 'la',
+      'வ': 'va',
+      'ழ': 'zha',
+      'ள': 'la',
+      'ற': 'ra',
+      'ன': 'na'
     };
-    return pronunciationMap[letter] || letter.toLowerCase();
+    return tamilConsonantPronunciationMap[consonant] || consonant;
   };
 
-  // Helper function to get word association and emoji for each letter
-  const getLetterAssociation = (letter: string): { word: string; emoji: string } => {
-    const associations: { [key: string]: { word: string; emoji: string } } = {
-      'A': { word: 'Apple', emoji: '🍎' },
-      'B': { word: 'Ball', emoji: '⚽' },
-      'C': { word: 'Cat', emoji: '🐱' },
-      'D': { word: 'Dog', emoji: '🐶' },
-      'E': { word: 'Elephant', emoji: '🐘' },
-      'F': { word: 'Fish', emoji: '🐠' },
-      'G': { word: 'Grapes', emoji: '🍇' },
-      'H': { word: 'House', emoji: '🏠' },
-      'I': { word: 'Ice cream', emoji: '🍦' },
-      'J': { word: 'Juice', emoji: '🧃' },
-      'K': { word: 'Kite', emoji: '🪁' },
-      'L': { word: 'Lion', emoji: '🦁' },
-      'M': { word: 'Monkey', emoji: '🐵' },
-      'N': { word: 'Nest', emoji: '🪹' },
-      'O': { word: 'Orange', emoji: '🍊' },
-      'P': { word: 'Penguin', emoji: '🐧' },
-      'Q': { word: 'Queen', emoji: '👸' },
-      'R': { word: 'Rabbit', emoji: '🐰' },
-      'S': { word: 'Sun', emoji: '☀️' },
-      'T': { word: 'Tiger', emoji: '🐯' },
-      'U': { word: 'Umbrella', emoji: '☂️' },
-      'V': { word: 'Van', emoji: '🚐' },
-      'W': { word: 'Watch', emoji: '⌚' },
-      'X': { word: 'Xylophone', emoji: '🎹' },
-      'Y': { word: 'Yo-yo', emoji: '🪀' },
-      'Z': { word: 'Zebra', emoji: '🦓' }
-    };
-    return associations[letter] || { word: letter, emoji: '📝' };
-  };
-
-  const nextLetter = () => {
-    if (currentIndex < ALPHABETS.length - 1) {
+  const nextConsonant = () => {
+    if (currentIndex < TAMIL_CONSONANTS.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setFeedback('');
       setHasRecorded(false);
@@ -407,7 +366,7 @@ export default function ReadingPracticePage() {
     }
   };
 
-  const previousLetter = () => {
+  const previousConsonant = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setFeedback('');
@@ -424,10 +383,10 @@ export default function ReadingPracticePage() {
 
   if (!isSupported) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8">
+      <main className="min-h-screen bg-gradient-to-br from-emerald-400 via-teal-300 to-cyan-300 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <Link href="/choose-language?section=reading&lang=en">
+            <Link href="/choose-language?section=reading&lang=ta">
               <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
                 ← Back
               </button>
@@ -448,7 +407,7 @@ export default function ReadingPracticePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8 relative">
+    <main className="min-h-screen bg-gradient-to-br from-emerald-400 via-teal-300 to-cyan-300 p-8 relative">
       {/* Celebration Overlay */}
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -498,10 +457,10 @@ export default function ReadingPracticePage() {
             {/* Success Messages */}
             <div className="text-center mt-6 space-y-3">
               <h2 className="text-6xl font-bold text-white drop-shadow-lg animate-pulse">
-                Excellent! 🎉
+                சிறப்பு! 🎉
               </h2>
               <p className="text-3xl text-yellow-300 font-semibold drop-shadow">
-                Perfect Pronunciation!
+                Perfect Tamil Consonant Pronunciation!
               </p>
             </div>
           </div>
@@ -518,29 +477,29 @@ export default function ReadingPracticePage() {
 
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <Link href="/choose-language?section=reading&lang=en">
+          <Link href="/choose-language?section=reading&lang=ta">
             <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
               ← Back
             </button>
           </Link>
-          <h1 className="text-5xl font-bold text-white drop-shadow-lg">Speaking Practice - Alphabets</h1>
+          <h1 className="text-5xl font-bold text-white drop-shadow-lg">Tamil Speaking Practice - மெய் (Consonants)</h1>
           <div className="w-24"></div>
         </div>
 
         <div className="bg-white rounded-xl shadow-2xl p-6 mb-8">
           <div className="flex justify-between items-center">
             <div className="text-center flex-1">
-              <p className="text-gray-600 text-lg mb-1">Current Letter</p>
-              <p className="text-8xl font-bold text-pink-600">{currentLetter}</p>
+              <p className="text-gray-600 text-lg mb-1">Current Tamil Consonant</p>
+              <p className="text-8xl font-bold text-emerald-600">{currentConsonant}</p>
               {isDataCollectionMode && (
                 <p className="text-sm text-orange-600 font-semibold">
-                  Attempt: {pronunciationDataCollector.getCurrentAttemptNumber(currentLetter)}/2
+                  Attempt: {pronunciationDataCollector.getCurrentAttemptNumber(currentConsonant)}/2
                 </p>
               )}
             </div>
             <div className="text-center flex-1">
               <p className="text-gray-600 text-lg mb-1">
-                {isDataCollectionMode ? 'Data Collection' : 'Progress'}
+                {isDataCollectionMode ? 'Tamil Consonant Data Collection' : 'Progress'}
               </p>
               {isDataCollectionMode && collectionStats ? (
                 <div>
@@ -553,7 +512,7 @@ export default function ReadingPracticePage() {
                 </div>
               ) : (
                 <p className="text-4xl font-bold text-purple-600">
-                  {currentIndex + 1} / {ALPHABETS.length}
+                  {currentIndex + 1} / {TAMIL_CONSONANTS.length}
                 </p>
               )}
             </div>
@@ -564,11 +523,11 @@ export default function ReadingPracticePage() {
               {isDataCollectionMode ? (
                 <div>
                   <p className="text-3xl font-bold text-green-600">
-                    {pronunciationDataCollector.needsCollection(currentLetter) ? 'NEEDED' : 'COMPLETE'}
+                    {pronunciationDataCollector.needsCollection(currentConsonant) ? 'NEEDED' : 'COMPLETE'}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {pronunciationDataCollector.needsCollection(currentLetter) ? 
-                      `${2 - pronunciationDataCollector.getCurrentAttemptNumber(currentLetter) + 1} more needed` : 
+                    {pronunciationDataCollector.needsCollection(currentConsonant) ? 
+                      `${2 - pronunciationDataCollector.getCurrentAttemptNumber(currentConsonant) + 1} more needed` : 
                       'All recordings done'
                     }
                   </p>
@@ -583,25 +542,27 @@ export default function ReadingPracticePage() {
         <div className="bg-white rounded-xl shadow-2xl p-8">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              {isDataCollectionMode ? 'Data Collection for:' : 'Practice saying:'} <span className="text-pink-600">{currentLetter}</span>
+              {isDataCollectionMode ? 'Tamil Consonant Data Collection for:' : 'Practice saying:'} <span className="text-emerald-600">{currentConsonant}</span>
             </h2>
             <p className="text-gray-600">
               {isDataCollectionMode ? 
-                'Help us improve by recording your pronunciation' : 
+                'Help us improve Tamil speech recognition by recording your consonant pronunciation' : 
                 'Click \'Listen\' to hear, then record and submit'
               }
             </p>
-            <p className="text-sm text-orange-600 font-semibold mt-2">💡 Tip: Just say the letter &quot;{currentLetter}&quot; (pronounced &quot;{getLetterPronunciation(currentLetter)}&quot;)</p>
-            {isDataCollectionMode && pronunciationDataCollector.needsCollection(currentLetter) && (
+            <p className="text-sm text-orange-600 font-semibold mt-2">
+              💡 Tip: Say the Tamil consonant "{currentConsonant}" (romanized: "{getTamilConsonantPronunciation(currentConsonant)}")
+            </p>
+            {isDataCollectionMode && pronunciationDataCollector.needsCollection(currentConsonant) && (
               <p className="text-sm text-blue-600 font-semibold mt-2">
-                🎤 Recording attempt {pronunciationDataCollector.getCurrentAttemptNumber(currentLetter)} of 2 for letter {currentLetter}
+                🎤 Recording attempt {pronunciationDataCollector.getCurrentAttemptNumber(currentConsonant)} of 2 for Tamil consonant {currentConsonant}
               </p>
             )}
           </div>
 
           <div className="flex justify-center gap-6 mb-8">
             <button
-              onClick={playLetterSound}
+              onClick={playTamilConsonantSound}
               disabled={isListening}
               className="px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold text-2xl hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -617,7 +578,7 @@ export default function ReadingPracticePage() {
                   ? 'bg-red-500 animate-pulse'
                   : hasRecorded
                   ? 'bg-green-500'
-                  : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600'
               } text-white rounded-xl font-bold text-2xl transition-all transform hover:scale-105 shadow-lg flex items-center gap-3 disabled:cursor-not-allowed disabled:opacity-75`}
             >
               <span className="text-4xl">🎤</span>
@@ -628,15 +589,15 @@ export default function ReadingPracticePage() {
           </div>
 
           {currentTranscript && (
-            <div className="text-center mb-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
+            <div className="text-center mb-6 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200">
               <div className="mb-4">
                 <p className="text-gray-600 text-sm mb-2 font-semibold">You said:</p>
-                <p className="text-4xl font-bold text-blue-600">{currentTranscript}</p>
+                <p className="text-4xl font-bold text-emerald-600">{currentTranscript}</p>
               </div>
-              <div className="pt-4 border-t border-blue-200">
+              <div className="pt-4 border-t border-emerald-200">
                 <p className="text-gray-500 text-xs mb-1">Expected pronunciation:</p>
                 <p className="text-lg font-semibold text-purple-600">
-                  &quot;{getLetterPronunciation(currentLetter)}&quot; or &quot;{currentLetter} for {getLetterAssociation(currentLetter).word}&quot;
+                  &quot;{currentConsonant}&quot; (romanized: &quot;{getTamilConsonantPronunciation(currentConsonant)}&quot;)
                 </p>
               </div>
             </div>
@@ -646,14 +607,14 @@ export default function ReadingPracticePage() {
             <button
               onClick={handleSubmit}
               disabled={!hasRecorded}
-              className="px-12 py-4 bg-pink-500 text-white rounded-lg font-bold text-2xl hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
+              className="px-12 py-4 bg-emerald-500 text-white rounded-lg font-bold text-2xl hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               Submit
             </button>
             <button
               onClick={handleRetry}
               disabled={isListening}
-              className="px-12 py-4 bg-orange-500 text-white rounded-lg font-bold text-2xl hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
+              className="px-12 py-4 bg-red-500 text-white rounded-lg font-bold text-2xl hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               🔄 Retry
             </button>
@@ -661,7 +622,7 @@ export default function ReadingPracticePage() {
 
           {feedback && (
             <div className={`text-center p-4 rounded-lg mb-6 ${
-              feedback.includes('Perfect') || feedback.includes('correct')
+              feedback.includes('Perfect') || feedback.includes('correct') || feedback.includes('சிறப்பு')
                 ? 'bg-green-100 text-green-800'
                 : feedback.includes('Try again')
                 ? 'bg-yellow-100 text-yellow-800'
@@ -673,32 +634,21 @@ export default function ReadingPracticePage() {
 
           <div className="flex justify-center gap-4 mt-6">
             <button
-              onClick={previousLetter}
+              onClick={previousConsonant}
               disabled={currentIndex === 0}
               className="px-6 py-3 bg-gray-500 text-white rounded-lg font-bold text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               ← Previous
             </button>
             <button
-              onClick={nextLetter}
-              disabled={currentIndex === ALPHABETS.length - 1}
-              className="px-6 py-3 bg-pink-500 text-white rounded-lg font-bold text-lg hover:bg-pink-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              onClick={nextConsonant}
+              disabled={currentIndex === TAMIL_CONSONANTS.length - 1}
+              className="px-6 py-3 bg-emerald-500 text-white rounded-lg font-bold text-lg hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Next →
             </button>
           </div>
         </div>
-
-        {/* <div className="mt-8 bg-white/80 rounded-xl p-6">
-          <h3 className="text-2xl font-bold text-gray-800 mb-3">Speaking Tips:</h3>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 text-lg">
-            <li>Click &apos;Listen&apos; to hear how the letter sounds</li>
-            <li>Speak clearly into your microphone</li>
-            <li>Make sure you&apos;re in a quiet environment</li>
-            <li>You can practice each letter as many times as you want</li>
-            <li>Use the Previous/Next buttons to navigate freely</li>
-          </ul>
-        </div> */}
       </div>
     </main>
   );

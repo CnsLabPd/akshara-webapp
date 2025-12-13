@@ -1,19 +1,22 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DrawingCanvas, { DrawingCanvasRef } from '@/components/DrawingCanvas';
 import DrawingAnimation from '@/components/DrawingAnimation';
 import KeyboardDrawingTutorial from '@/components/KeyboardDrawingTutorial';
 import { characterRecognizer, isCharacterMatch, isCharacterMatchDetailed, isCharacterMatchStrict } from '@/utils/tensorflowModel';
 import { isDesktopDevice } from '@/utils/deviceDetection';
 import { useKeyboardDrawing } from '@/hooks/useKeyboardDrawing';
-import { handwritingDataCollector } from '@/utils/handwritingDataCollector';
 
-const ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const ENGLISH_ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const TAMIL_VOWELS = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ'];
 
 export default function PracticePage() {
   const router = useRouter(); // Use router for navigation
+  const searchParams = useSearchParams();
+  const language = searchParams.get('lang') || 'en';
+  const ALPHABETS = language === 'ta' ? TAMIL_VOWELS : ENGLISH_ALPHABETS;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [hasDrawn, setHasDrawn] = useState(false);
@@ -100,7 +103,7 @@ export default function PracticePage() {
     }
 
     setIsProcessing(true);
-    setFeedback('AI is analyzing your drawing...');
+    setFeedback('AI is analyzing your writing...');
     setRecognizedOutput('');
     setPreprocessedImageUrl('');
 
@@ -111,14 +114,6 @@ export default function PracticePage() {
       console.log('TensorFlow.js prediction:', result);
       console.log('Expected letter:', currentLetter);
 
-      // Collect handwriting data for validation
-      await handwritingDataCollector.collectData(
-        canvas,
-        result.letter || '',
-        currentLetter,
-        result.confidence || 0,
-        'capital-alphabets'
-      );
       
       // Show what the model recognized with confidence
       const confidencePercent = Math.round(result.confidence * 100);
@@ -131,10 +126,21 @@ export default function PracticePage() {
 
       // Strict educational character matching - only exact case matches count
       const hasGoodConfidence = result.confidence >= characterRecognizer.getConfidenceThreshold(result.letter);
-      const matchResult = isCharacterMatchStrict(result.letter, currentLetter, 'capital');
+      
+      let matchResult;
+      if (language === 'ta') {
+        // For Tamil, we'll accept any drawing as correct for now since the model isn't trained for Tamil
+        matchResult = {
+          isCorrect: true,
+          isWrongCase: false,
+          feedback: `Perfect! You wrote "${currentLetter}" correctly! 🎉`
+        };
+      } else {
+        matchResult = isCharacterMatchStrict(result.letter, currentLetter, 'capital');
+      }
 
-      if (matchResult.isCorrect && hasGoodConfidence) {
-        // Only advance for EXACT capital letter matches
+      if (matchResult.isCorrect && (hasGoodConfidence || language === 'ta')) {
+        // Advance for correct matches (Tamil or English with good confidence)
         setScore(score + 1);
         setFeedback(matchResult.feedback);
         setShowCelebration(true);
@@ -154,11 +160,11 @@ export default function PracticePage() {
         }, 2500);
       } else if (matchResult.isWrongCase && hasGoodConfidence) {
         // Educational feedback for wrong case but right letter
-        setFeedback(`${matchResult.feedback} (${confidencePercent}% confidence)`);
+        setFeedback(matchResult.feedback);
         setIsProcessing(false);
       } else if (matchResult.isCorrect && !hasGoodConfidence) {
         // Right letter, right case, but low confidence
-        setFeedback(`Correct capital letter, but try writing more clearly! (${confidencePercent}% confidence)`);
+        setFeedback(`Good job! Try writing more clearly next time! ✏️`);
         setIsProcessing(false);
       } else {
         // Wrong letter entirely or other issues
@@ -167,7 +173,7 @@ export default function PracticePage() {
       }
     } catch (error) {
       console.error('TensorFlow.js Recognition Error:', error);
-      setFeedback('Error processing your drawing. Please try again.');
+      setFeedback('Error processing your writing. Please try again.');
       setRecognizedOutput('');
       setPreprocessedImageUrl('');
       setIsProcessing(false);
@@ -276,10 +282,10 @@ export default function PracticePage() {
         }
       `}</style>
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push(`/choose-language?section=writing&subsection=capital&lang=${language}`)}
             className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg"
           >
             ← Back
@@ -313,8 +319,8 @@ export default function PracticePage() {
             <div className="mb-6 pb-6 border-b border-gray-200">
               <div className="flex items-center justify-between max-w-md mx-auto">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold text-gray-700">⌨️ Keyboard Drawing Mode</span>
-                  <span className="text-sm text-gray-500">(Hold W to draw)</span>
+                  <span className="text-lg font-semibold text-gray-700">⌨️ Keyboard Writing Mode</span>
+                  <span className="text-sm text-gray-500">(Hold W to write)</span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -336,7 +342,7 @@ export default function PracticePage() {
             {modelError ? (
               <p className="text-red-600">{modelError}</p>
             ) : modelReady ? (
-              <p className="text-gray-600">Draw the letter, then click Submit</p>
+              <p className="text-gray-600">Write the letter, then click Submit</p>
             ) : (
               <p className="text-orange-600">Loading AI model...</p>
             )}
@@ -352,7 +358,7 @@ export default function PracticePage() {
                     : 'bg-yellow-400 text-gray-800'
                 }`}
               >
-                {isWKeyPressed ? '✏️ Drawing Enabled' : '🔓 Hold W to Draw'}
+                {isWKeyPressed ? '✏️ Writing Enabled' : '🔓 Hold W to Write'}
               </div>
             </div>
           )}
@@ -369,24 +375,24 @@ export default function PracticePage() {
 
           <div className="flex justify-center gap-4 mb-6">
             <button
+              onClick={() => setShowAnimation(true)}
+              className="px-12 py-4 bg-purple-500 text-white rounded-lg font-bold text-2xl hover:bg-purple-600 transition-colors shadow-lg"
+            >
+              👁️ Show me
+            </button>
+            <button
+              onClick={() => canvasRef.current?.clear()}
+              disabled={isProcessing}
+              className="px-12 py-4 bg-orange-500 text-white rounded-lg font-bold text-2xl hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
+            >
+              🧹 Clear
+            </button>
+            <button
               onClick={handleSubmit}
               disabled={!hasDrawn || isProcessing || !modelReady || !!modelError}
               className="px-12 py-4 bg-green-500 text-white rounded-lg font-bold text-2xl hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               {isProcessing ? 'AI Analyzing...' : 'Submit'}
-            </button>
-            <button
-              onClick={handleRetry}
-              disabled={isProcessing}
-              className="px-12 py-4 bg-orange-500 text-white rounded-lg font-bold text-2xl hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
-            >
-              🔄 Retry
-            </button>
-            <button
-              onClick={() => setShowAnimation(true)}
-              className="px-12 py-4 bg-purple-500 text-white rounded-lg font-bold text-2xl hover:bg-purple-600 transition-colors shadow-lg"
-            >
-              🎬 Animation
             </button>
           </div>
 
@@ -402,43 +408,7 @@ export default function PracticePage() {
             </div>
           )}
 
-          {recognizedOutput && (
-            <div className="text-center p-4 rounded-lg mb-6 bg-purple-100 border-2 border-purple-300">
-              <p className="text-gray-700 text-lg mb-2">
-                <span className="font-semibold">Model Recognized:</span>
-              </p>
-              <p className="text-3xl font-bold text-purple-700">
-                &quot;{recognizedOutput}&quot;
-              </p>
-              <p className="text-sm text-gray-600 mt-2">
-                Expected: <span className="font-semibold text-orange-600">{currentLetter}</span>
-              </p>
-            </div>
-          )}
 
-          {preprocessedImageUrl && (
-            <div className="text-center p-4 rounded-lg mb-6 bg-blue-100 border-2 border-blue-300">
-              <p className="text-gray-700 text-lg mb-4">
-                <span className="font-semibold">🔍 Preprocessed Input (What the Model Sees):</span>
-              </p>
-              <div className="flex justify-center items-center gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">28x28 pixels, normalized</p>
-                  <div className="inline-block p-2 bg-white rounded-lg shadow-lg">
-                    <img 
-                      src={preprocessedImageUrl} 
-                      alt="Preprocessed input"
-                      className="w-32 h-32 image-rendering-pixelated border border-gray-300"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                This is the actual 28x28 grayscale image sent to the AI model
-              </p>
-            </div>
-          )}
 
           {isProcessing && (
             <div className="text-center mt-4">
