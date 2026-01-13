@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 const LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇮🇳', description: 'Learn English alphabets and pronunciation' },
   { code: 'hi', name: 'Hindi', flag: '🇮🇳', description: 'Coming Soon!', disabled: true },
-  { code: 'ta', name: 'Tamil', flag: '🇮🇳', description: 'Learn Tamil vowels and consonants' },
+  { code: 'ta', name: 'Tamil', flag: '🇮🇳', description: 'Coming Soon!', disabled: true },
 ];
 
 export default function ChooseLanguage() {
@@ -17,9 +17,28 @@ export default function ChooseLanguage() {
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [selectedSubsection, setSelectedSubsection] = useState<string>('');
   const [isVisible, setIsVisible] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [floatingLetters, setFloatingLetters] = useState<Array<{letter: string, left: string, top: string, delay: string, duration: string}>>([]);
 
   useEffect(() => {
+    // Check authentication first
+    const checkAuth = () => {
+      try {
+        const savedUser = localStorage.getItem('aksharaUser');
+        if (!savedUser) {
+          router.push('/login');
+          return;
+        }
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        router.push('/login');
+        return;
+      }
+    };
+
+    checkAuth();
+
     setIsVisible(true);
     // Generate floating letters on client side to avoid hydration mismatch
     const letters = [...Array(15)].map((_, i) => ({
@@ -44,30 +63,40 @@ export default function ChooseLanguage() {
         setSelectedSubsection(subsection);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   // Auto-redirect for reading sections only when subsection is selected
   useEffect(() => {
     if (selectedSection === 'reading' && selectedSubsection && selectedLanguage) {
       let targetUrl = '';
-      
-      if (selectedLanguage === 'ta') {
-        // Tamil reading redirects
-        targetUrl = selectedSubsection === 'vowels'
-          ? `/reading/practice/tamil-alphabets?lang=${selectedLanguage}`
-          : selectedSubsection === 'consonants'
-          ? `/reading/practice/tamil-consonants?lang=${selectedLanguage}`
-          : `/reading/practice/numbers?lang=${selectedLanguage}`;
-      } else {
-        // English reading redirects
-        targetUrl = selectedSubsection === 'alphabets'
-          ? `/reading/practice?lang=${selectedLanguage}`
-          : `/reading/practice/numbers?lang=${selectedLanguage}`;
-      }
-      
+
+      // English reading redirects only
+      targetUrl = selectedSubsection === 'alphabets'
+        ? `/reading/practice?lang=${selectedLanguage}`
+        : `/reading/practice/numbers?lang=${selectedLanguage}`;
+
       router.push(targetUrl);
     }
   }, [selectedSection, selectedSubsection, selectedLanguage, router]);
+
+  // Show loading while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-2xl p-8">
+          <div className="flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+            <span className="text-lg font-medium text-gray-700">Loading...</span>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // If not authenticated, return null (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 relative overflow-hidden">
@@ -106,9 +135,9 @@ export default function ChooseLanguage() {
 
       <div className="max-w-6xl mx-auto px-8 py-16 relative z-10">
         {/* Back Button */}
-        <Link href="/">
+        <Link href="/dashboard">
           <button className="mb-8 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-white/30 transition-all duration-300 border border-white/30">
-            ← Back to Home
+            ← Back to Dashboard
           </button>
         </Link>
 
@@ -183,31 +212,42 @@ export default function ChooseLanguage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Writing Section */}
-              <div
-                onClick={() => setSelectedSection('writing')}
-                className="group p-10 bg-gradient-to-br from-cyan-500/30 to-blue-600/40 backdrop-blur-sm border-2 border-cyan-300/50 text-white rounded-3xl hover:from-cyan-400/40 hover:to-blue-500/50 hover:border-cyan-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-cyan-500/25"
-              >
-                <div className="text-8xl mb-6 text-center group-hover:animate-bounce filter drop-shadow-lg">✍️</div>
-                <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent">Writing</h3>
-                <ul className="text-lg space-y-3">
-                  <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                    <span className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full animate-pulse"></span>
+              {/* Writing Section - Disabled/Premium */}
+              <div className="group p-10 bg-gradient-to-br from-gray-500/30 to-gray-600/40 backdrop-blur-sm border-2 border-gray-300/50 text-white rounded-3xl shadow-2xl cursor-not-allowed relative overflow-hidden">
+                {/* Premium Badge */}
+                <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full animate-pulse">
+                  🚀 PREMIUM
+                </div>
+                
+                <div className="text-8xl mb-6 text-center filter drop-shadow-lg opacity-60">✍️</div>
+                <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-gray-200 to-gray-300 bg-clip-text text-transparent">Writing</h3>
+                <ul className="text-lg space-y-3 opacity-70">
+                  <li className="flex items-center gap-3">
+                    <span className="w-3 h-3 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"></span>
                     Practice writing letters
                   </li>
-                  <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                    <span className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full animate-pulse"></span>
+                  <li className="flex items-center gap-3">
+                    <span className="w-3 h-3 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"></span>
                     AI handwriting recognition
                   </li>
-                  <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                    <span className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full animate-pulse"></span>
+                  <li className="flex items-center gap-3">
+                    <span className="w-3 h-3 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"></span>
                     Instant feedback
                   </li>
-                  <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                    <span className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full animate-pulse"></span>
+                  <li className="flex items-center gap-3">
+                    <span className="w-3 h-3 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"></span>
                     Track your progress
                   </li>
                 </ul>
+                
+                {/* Coming Soon Overlay */}
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center rounded-3xl">
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">🚧</div>
+                    <div className="text-2xl font-bold text-yellow-300 mb-2">Coming Soon!</div>
+                    <div className="text-sm text-gray-200">Premium Feature</div>
+                  </div>
+                </div>
               </div>
 
               {/* Speaking Section */}
@@ -316,53 +356,27 @@ export default function ChooseLanguage() {
                   </>
                 )
               ) : (
-                selectedLanguage === 'ta' ? (
-                  <>
+                <>
+                  {/* Alphabets for Speaking */}
+                  <div
+                    onClick={() => setSelectedSubsection('alphabets')}
+                    className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
+                  >
+                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
+                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Alphabets</h3>
+                    <p className="text-center text-sky-100">A to Z</p>
+                  </div>
 
-                    {/* Tamil Vowels for Speaking */}
-                    <div
-                      onClick={() => setSelectedSubsection('vowels')}
-                      className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">அ</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Tamil Vowels</h3>
-                      <p className="text-center text-sky-100">உயிர் எழுத்துக்கள்</p>
-                    </div>
-
-                    {/* Tamil Consonants for Speaking */}
-                    <div
-                      onClick={() => setSelectedSubsection('consonants')}
-                      className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">க</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Tamil Consonants</h3>
-                      <p className="text-center text-emerald-100">மெய் எழுத்துக்கள்</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-
-                    {/* Alphabets for Speaking */}
-                    <div
-                      onClick={() => setSelectedSubsection('alphabets')}
-                      className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Alphabets</h3>
-                      <p className="text-center text-sky-100">A to Z</p>
-                    </div>
-
-                    {/* Numbers for Speaking */}
-                    <div
-                      onClick={() => setSelectedSubsection('numbers')}
-                      className="group p-8 bg-gradient-to-br from-rose-600/40 to-pink-700/50 backdrop-blur-sm border-2 border-rose-300/50 text-white rounded-3xl hover:from-rose-500/50 hover:to-pink-600/60 hover:border-rose-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-rose-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-rose-200 to-pink-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-rose-100 to-pink-100 bg-clip-text text-transparent">Numbers</h3>
-                      <p className="text-center text-rose-100">0 to 9</p>
-                    </div>
-                  </>
-                )
+                  {/* Numbers for Speaking */}
+                  <div
+                    onClick={() => setSelectedSubsection('numbers')}
+                    className="group p-8 bg-gradient-to-br from-rose-600/40 to-pink-700/50 backdrop-blur-sm border-2 border-rose-300/50 text-white rounded-3xl hover:from-rose-500/50 hover:to-pink-600/60 hover:border-rose-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-rose-500/30"
+                  >
+                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-rose-200 to-pink-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
+                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-rose-100 to-pink-100 bg-clip-text text-transparent">Numbers</h3>
+                    <p className="text-center text-rose-100">0 to 9</p>
+                  </div>
+                </>
               )}
             </div>
           </div>

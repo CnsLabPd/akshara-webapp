@@ -1,419 +1,293 @@
+// app/reading/practice/numbers/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { pronunciationDataCollector } from '@/utils/pronunciationDataCollector';
 
 const NUMBERS = '0123456789'.split('');
 
-export default function SpeakingPracticeNumbersPage() {
+interface UserData {
+  userSub: string;
+  email: string;
+  fullName?: string;
+}
+
+interface SelectedStudent {
+  studentId: string;
+  studentName: string;
+}
+
+export default function ReadingPracticeNumbersPage() {
+  const searchParams = useSearchParams();
+  const [user, setUser] = useState<UserData | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<SelectedStudent | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [isListening, setIsListening] = useState(false);
-  const [hasRecorded, setHasRecorded] = useState(false);
-  const [currentTranscript, setCurrentTranscript] = useState<string>('');
-  const [feedback, setFeedback] = useState<string>('');
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
-  const [isDataCollectionMode, setIsDataCollectionMode] = useState(false);
-  const [sessionId, setSessionId] = useState<string>('');
-  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
-  const [collectionStats, setCollectionStats] = useState<any>(null);
-  const recognitionRef = useRef<any>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [attemptsUsed, setAttemptsUsed] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
-  useEffect(() => {
-    // Check if browser supports speech recognition
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-IN';
-      recognition.maxAlternatives = 3;
-
-      let finalTranscript = '';
-      let interimTranscript = '';
-
-      recognition.onresult = (event: any) => {
-        interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        const detectedText = (finalTranscript || interimTranscript).trim();
-        console.log('Recognized speech:', detectedText);
-
-        if (detectedText) {
-          setCurrentTranscript(detectedText);
-          setHasRecorded(true);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-
-        if (event.error === 'no-speech') {
-          setFeedback('No speech detected. Please speak louder and try again!');
-          setTimeout(() => {
-            if (!hasRecorded) {
-              setFeedback('');
-            }
-          }, 2000);
-        } else if (event.error === 'not-allowed') {
-          setFeedback('Microphone access denied. Please allow microphone access.');
-        } else if (event.error === 'aborted') {
-          return;
-        } else {
-          setFeedback('Error occurred. Please try again.');
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        finalTranscript = '';
-        interimTranscript = '';
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-    };
-  }, []);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const currentNumber = NUMBERS[currentIndex];
 
-  const handleSubmit = () => {
-    if (!hasRecorded) return;
+  useEffect(() => {
+    const savedUser = localStorage.getItem('aksharaUser');
+    if (!savedUser) {
+      window.location.href = '/login';
+      return;
+    }
+    setUser(JSON.parse(savedUser));
 
-    const isCorrect = checkNumberMatch(currentTranscript, currentNumber);
+    const savedStudent = localStorage.getItem('selectedStudent');
+    if (!savedStudent) {
+      window.location.href = '/students';
+      return;
+    }
+    setSelectedStudent(JSON.parse(savedStudent));
 
-    if (isCorrect) {
-      setScore(score + 1);
-      setFeedback('Perfect! You said it correctly!');
-      setShowCelebration(true);
+    const charParam = searchParams.get('char');
+    if (charParam) {
+      const numIndex = NUMBERS.indexOf(charParam);
+      if (numIndex !== -1) {
+        setCurrentIndex(numIndex);
+      }
+    }
+  }, [searchParams]);
 
-      setTimeout(() => {
-        setShowCelebration(false);
-        if (currentIndex < NUMBERS.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-          setFeedback('');
-          setHasRecorded(false);
-          setCurrentTranscript('');
+  const fetchAttempts = useCallback(async () => {
+    if (!selectedStudent) return;
+
+    try {
+      const response = await fetch(`/api/recordings/progress?studentId=${selectedStudent.studentId}&type=english-numbers&t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const attempts = data.progress?.[currentNumber] || 0;
+        setAttemptsUsed(attempts);
+      }
+    } catch (error) {
+      console.error('Error fetching attempts:', error);
+    }
+  }, [selectedStudent, currentNumber]);
+
+  useEffect(() => {
+    if (user && selectedStudent) {
+      fetchAttempts();
+    }
+  }, [user, selectedStudent, currentIndex, fetchAttempts]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-      }, 2500);
-    } else {
-      setFeedback(`Try again! Say the number "${getNumberWord(currentNumber)}"`);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setErrorMessage('');
+      setSuccessMessage('');
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setErrorMessage('Failed to access microphone. Please grant permission.');
     }
   };
 
-  const checkNumberMatch = (transcript: string, expectedNumber: string): boolean => {
-    const cleanTranscript = transcript.toLowerCase().trim();
-
-    console.log('User said:', cleanTranscript);
-    console.log('Expected number:', expectedNumber);
-
-    // Get the word for the number
-    const numberWord = getNumberWord(expectedNumber).toLowerCase();
-
-    // Direct match with the digit
-    if (cleanTranscript === expectedNumber) {
-      console.log('Match found: Exact number match');
-      return true;
-    }
-
-    // Match with the word (e.g., "zero", "one", "two")
-    if (cleanTranscript === numberWord || cleanTranscript.startsWith(numberWord + ' ') || cleanTranscript.startsWith(numberWord)) {
-      console.log(`Match found: Word match with "${numberWord}"`);
-      return true;
-    }
-
-    return false;
-  };
-
-  const startListening = () => {
-    if (recognitionRef.current && !isListening && !hasRecorded) {
-      setFeedback('');
-      setCurrentTranscript('');
-      setIsListening(true);
-      recognitionRef.current.start();
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
   };
 
-  const playNumberSound = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(getNumberWord(currentNumber));
-      utterance.rate = 0.8;
-      utterance.pitch = 1.2;
-      utterance.lang = 'en-IN';
-      window.speechSynthesis.speak(utterance);
+  const submitRecording = async () => {
+    if (!audioBlob || !user || !selectedStudent) return;
+
+    setUploadStatus('uploading');
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const formData = new FormData();
+    formData.append('teacherUserId', user.userSub);
+    formData.append('teacherName', user.fullName || '');
+    formData.append('studentId', selectedStudent.studentId);
+    formData.append('studentName', selectedStudent.studentName);
+    formData.append('character', currentNumber);
+    formData.append('audio', audioBlob, 'audio.webm');
+
+    try {
+      const response = await fetch('/api/audio/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.status === 403) {
+        setUploadStatus('error');
+        setErrorMessage('Maximum attempts exceeded for this character.');
+        return;
+      }
+
+      if (!response.ok) {
+        setUploadStatus('error');
+        setErrorMessage(data.error || 'Upload failed. Please try again.');
+        return;
+      }
+
+      setUploadStatus('success');
+      setSuccessMessage(`Recording ${data.attemptNumber}/2 uploaded successfully!`);
+      setAttemptsUsed(data.attemptNumber);
+      setAudioBlob(null);
+
+      await fetchAttempts();
+
+      if (data.attemptNumber === 2) {
+        setTimeout(() => {
+          handleNext();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadStatus('error');
+      setErrorMessage('Network error. Please try again.');
     }
   };
 
-  const getNumberWord = (number: string): string => {
-    const numberWords: { [key: string]: string } = {
-      '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four',
-      '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine'
-    };
-    return numberWords[number] || number;
-  };
-
-  const nextNumber = () => {
+  const handleNext = () => {
     if (currentIndex < NUMBERS.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setFeedback('');
-      setHasRecorded(false);
-      setCurrentTranscript('');
+      setAudioBlob(null);
+      setUploadStatus('idle');
+      setErrorMessage('');
+      setSuccessMessage('');
     }
   };
 
-  const previousNumber = () => {
+  const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
-      setFeedback('');
-      setHasRecorded(false);
-      setCurrentTranscript('');
+      setAudioBlob(null);
+      setUploadStatus('idle');
+      setErrorMessage('');
+      setSuccessMessage('');
     }
   };
 
-  const handleRetry = () => {
-    setFeedback('');
-    setHasRecorded(false);
-    setCurrentTranscript('');
-  };
+  if (!user || !selectedStudent) return null;
 
-  if (!isSupported) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <Link href="/choose-language?section=reading&lang=en">
-              <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
-                ← Back
-              </button>
-            </Link>
-          </div>
-          <div className="bg-white rounded-xl shadow-2xl p-12 text-center">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Speech Recognition Not Supported
-            </h2>
-            <p className="text-lg text-gray-600">
-              Your browser doesn&apos;t support speech recognition. Please try using Google Chrome or Microsoft Edge.
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const canRecord = attemptsUsed < 2;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8 relative">
-      {/* Celebration Overlay */}
-      {showCelebration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-3 h-3 rounded-full animate-ping"
-                  style={{
-                    backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'][i % 6],
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: '1s',
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="relative bg-white rounded-full p-8 shadow-2xl animate-bounce">
-              <svg
-                className="w-48 h-48 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M5 13l4 4L19 7"
-                  style={{
-                    strokeDasharray: 100,
-                    strokeDashoffset: 100,
-                    animation: 'draw 0.5s ease-in-out forwards',
-                  }}
-                />
-              </svg>
-            </div>
-
-            <div className="text-center mt-6 space-y-3">
-              <h2 className="text-6xl font-bold text-white drop-shadow-lg animate-pulse">
-                Excellent! 🎉
-              </h2>
-              <p className="text-3xl text-yellow-300 font-semibold drop-shadow">
-                Perfect Pronunciation!
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes draw {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}</style>
-
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8">
+      <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <Link href="/choose-language?section=reading&lang=en">
+          <Link href="/reading?type=english-numbers">
             <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
               ← Back
             </button>
           </Link>
-          <h1 className="text-5xl font-bold text-white drop-shadow-lg">Speaking Practice - Numbers</h1>
+          <h1 className="text-5xl font-bold text-white drop-shadow-lg">Audio Data Recording - Numbers</h1>
           <div className="w-24"></div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-2xl p-6 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="text-center flex-1">
-              <p className="text-gray-600 text-lg mb-1">Current Number</p>
-              <p className="text-8xl font-bold text-pink-600">{currentNumber}</p>
-            </div>
-            <div className="text-center flex-1">
-              <p className="text-gray-600 text-lg mb-1">Progress</p>
-              <p className="text-4xl font-bold text-purple-600">
-                {currentIndex + 1} / {NUMBERS.length}
-              </p>
-            </div>
-            <div className="text-center flex-1">
-              <p className="text-gray-600 text-lg mb-1">Correct Attempts</p>
-              <p className="text-6xl font-bold text-blue-600">{score}</p>
-            </div>
-          </div>
-        </div>
-
         <div className="bg-white rounded-xl shadow-2xl p-8">
-          <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              Practice saying: <span className="text-pink-600">{currentNumber}</span>
-            </h2>
-            <p className="text-gray-600">Click &apos;Listen&apos; to hear, then record and submit</p>
-            <p className="text-sm text-orange-600 font-semibold mt-2">💡 Tip: Say &quot;{getNumberWord(currentNumber)}&quot;</p>
+          <div className="text-center mb-8">
+            <p className="text-gray-600 text-lg mb-2">Current Number</p>
+            <p className="text-9xl font-bold text-pink-600 mb-4">{currentNumber}</p>
+            <p className="text-2xl font-semibold text-gray-700">
+              Attempt {attemptsUsed} / 2
+            </p>
           </div>
 
-          <div className="flex justify-center gap-6 mb-8">
-            <button
-              onClick={playNumberSound}
-              disabled={isListening}
-              className="px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold text-2xl hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-4xl">🔊</span>
-              <span>Listen</span>
-            </button>
-
-            <button
-              onClick={startListening}
-              disabled={isListening || hasRecorded}
-              className={`px-8 py-6 ${
-                isListening
-                  ? 'bg-red-500 animate-pulse'
-                  : hasRecorded
-                  ? 'bg-green-500'
-                  : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600'
-              } text-white rounded-xl font-bold text-2xl transition-all transform hover:scale-105 shadow-lg flex items-center gap-3 disabled:cursor-not-allowed disabled:opacity-75`}
-            >
-              <span className="text-4xl">🎤</span>
-              <span>
-                {isListening ? 'Listening...' : hasRecorded ? 'Recorded!' : 'Start Recording'}
-              </span>
-            </button>
-          </div>
-
-          {currentTranscript && (
-            <div className="text-center mb-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-              <div className="mb-4">
-                <p className="text-gray-600 text-sm mb-2 font-semibold">You said:</p>
-                <p className="text-4xl font-bold text-blue-600">{currentTranscript}</p>
-              </div>
-              <div className="pt-4 border-t border-blue-200">
-                <p className="text-gray-500 text-xs mb-1">Expected pronunciation:</p>
-                <p className="text-lg font-semibold text-purple-600">
-                  &quot;{getNumberWord(currentNumber)}&quot;
-                </p>
-              </div>
+          {!canRecord && (
+            <div className="bg-orange-100 border border-orange-400 text-orange-800 px-4 py-3 rounded-lg text-center mb-6">
+              <p className="font-semibold">✓ Character completed (2/2 recordings)</p>
             </div>
           )}
 
-          <div className="flex justify-center gap-4 mb-6">
+          <div className="flex justify-center items-center gap-4 mb-6">
             <button
-              onClick={handleSubmit}
-              disabled={!hasRecorded}
-              className="px-12 py-4 bg-pink-500 text-white rounded-lg font-bold text-2xl hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
-            >
-              Submit
-            </button>
-            <button
-              onClick={handleRetry}
-              disabled={isListening}
-              className="px-12 py-4 bg-orange-500 text-white rounded-lg font-bold text-2xl hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
-            >
-              🔄 Retry
-            </button>
-          </div>
-
-          {feedback && (
-            <div className={`text-center p-4 rounded-lg mb-6 ${
-              feedback.includes('Perfect') || feedback.includes('correct')
-                ? 'bg-green-100 text-green-800'
-                : feedback.includes('Try again')
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-blue-100 text-blue-800'
-            }`}>
-              <p className="text-xl font-semibold">{feedback}</p>
-            </div>
-          )}
-
-          <div className="flex justify-center gap-4 mt-6">
-            <button
-              onClick={previousNumber}
+              onClick={handlePrevious}
               disabled={currentIndex === 0}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg font-bold text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-4 bg-gray-500 text-white rounded-xl font-bold text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               ← Previous
             </button>
+
             <button
-              onClick={nextNumber}
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={!canRecord}
+              className={`px-10 py-6 rounded-xl font-bold text-2xl transition-all shadow-lg flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isRecording
+                  ? 'bg-[#F44336] text-white animate-pulse hover:bg-[#C62828]'
+                  : 'bg-[#4CAF50] text-white hover:bg-[#45a049]'
+              }`}
+            >
+              <span className="text-4xl">🎤</span>
+              <span>{isRecording ? 'Stop Recording' : 'Start Recording'}</span>
+            </button>
+
+            <button
+              onClick={submitRecording}
+              disabled={!audioBlob || uploadStatus === 'uploading'}
+              className="px-10 py-6 bg-[#2196F3] text-white rounded-xl font-bold text-2xl hover:bg-[#1976D2] disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg"
+            >
+              {uploadStatus === 'uploading' ? 'Uploading...' : 'Submit'}
+            </button>
+
+            <button
+              onClick={handleNext}
               disabled={currentIndex === NUMBERS.length - 1}
-              className="px-6 py-3 bg-pink-500 text-white rounded-lg font-bold text-lg hover:bg-pink-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-4 bg-gray-500 text-white rounded-xl font-bold text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               Next →
             </button>
           </div>
+
+          {audioBlob && (
+            <div className="text-center mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 font-semibold">✓ Recording ready to submit</p>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="text-center p-4 rounded-lg mb-6 bg-green-100 text-green-800 border border-green-300">
+              <p className="text-xl font-semibold">{successMessage}</p>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="text-center p-4 rounded-lg mb-6 bg-red-100 text-red-800 border border-red-300">
+              <p className="text-xl font-semibold">{errorMessage}</p>
+            </div>
+          )}
         </div>
       </div>
     </main>
