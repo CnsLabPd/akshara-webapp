@@ -1,25 +1,25 @@
 // app/confirm-email/page.tsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [resendMessage, setResendMessage] = useState('');
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
     // Prefill email from query param
-    const emailParam = searchParams.get('email');
+    const emailParam = searchParams.get("email");
     if (emailParam) {
       setEmail(decodeURIComponent(emailParam));
     }
@@ -27,33 +27,33 @@ export default function ConfirmEmailPage() {
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow digits, max 6 characters
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setCode(value);
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccessMessage('');
-    setResendMessage('');
+    setError("");
+    setSuccessMessage("");
+    setResendMessage("");
 
     if (!email.trim()) {
-      setError('Email is required');
+      setError("Email is required");
       return;
     }
 
     if (!code || code.length !== 6) {
-      setError('Please enter the complete 6-digit code');
+      setError("Please enter the complete 6-digit code");
       return;
     }
 
     setIsVerifying(true);
 
     try {
-      const response = await fetch('/api/auth/confirm', {
-        method: 'POST',
+      const response = await fetch("/api/auth/confirm", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -64,39 +64,39 @@ export default function ConfirmEmailPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Verification failed');
+        throw new Error(data.message || "Verification failed");
       }
 
-      setSuccessMessage('Email verified successfully! Redirecting to login...');
+      setSuccessMessage("Email verified successfully! Redirecting to login...");
 
       // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push(`/login?verified=true&email=${encodeURIComponent(email)}`);
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
+      setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
       setIsVerifying(false);
     }
   };
 
   const handleResend = async () => {
-    setError('');
-    setSuccessMessage('');
-    setResendMessage('');
+    setError("");
+    setSuccessMessage("");
+    setResendMessage("");
 
     if (!email.trim()) {
-      setError('Email is required');
+      setError("Email is required");
       return;
     }
 
     setIsResending(true);
 
     try {
-      const response = await fetch('/api/auth/resend', {
-        method: 'POST',
+      const response = await fetch("/api/auth/resend", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -106,13 +106,13 @@ export default function ConfirmEmailPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to resend code');
+        throw new Error(data.message || "Failed to resend code");
       }
 
-      setResendMessage('A new verification code has been sent to your email!');
-      setCode(''); // Clear the code field
+      setResendMessage("A new verification code has been sent to your email!");
+      setCode(""); // Clear the code field
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend code');
+      setError(err instanceof Error ? err.message : "Failed to resend code");
     } finally {
       setIsResending(false);
     }
@@ -124,9 +124,7 @@ export default function ConfirmEmailPage() {
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">📧</div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Verify Your Email</h1>
-          <p className="text-gray-600">
-            We've sent a 6-digit verification code to your email
-          </p>
+          <p className="text-gray-600">We've sent a 6-digit verification code to your email</p>
         </div>
 
         <form onSubmit={handleVerify} className="space-y-6">
@@ -161,9 +159,7 @@ export default function ConfirmEmailPage() {
               required
               disabled={isVerifying}
             />
-            <p className="text-xs text-gray-500 mt-1 text-center">
-              Enter the 6-digit code sent to your email
-            </p>
+            <p className="text-xs text-gray-500 mt-1 text-center">Enter the 6-digit code sent to your email</p>
           </div>
 
           {successMessage && (
@@ -184,11 +180,7 @@ export default function ConfirmEmailPage() {
             </div>
           )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
           <button
             type="submit"
@@ -201,7 +193,7 @@ export default function ConfirmEmailPage() {
                 Verifying...
               </div>
             ) : (
-              'Verify Email'
+              "Verify Email"
             )}
           </button>
 
@@ -217,14 +209,14 @@ export default function ConfirmEmailPage() {
                 Resending...
               </div>
             ) : (
-              'Resend Code'
+              "Resend Code"
             )}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600 text-sm">
-            Already verified?{' '}
+            Already verified?{" "}
             <Link href="/login" className="text-purple-600 hover:text-purple-800 font-medium">
               Sign in
             </Link>
@@ -232,14 +224,19 @@ export default function ConfirmEmailPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm"
-          >
+          <Link href="/" className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm">
             ← Back to Home
           </Link>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConfirmEmailInner />
+    </Suspense>
   );
 }
