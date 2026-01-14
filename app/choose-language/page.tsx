@@ -1,38 +1,42 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇮🇳', description: 'Learn English alphabets and pronunciation' },
-  { code: 'hi', name: 'Hindi', flag: '🇮🇳', description: 'Coming Soon!', disabled: true },
-  { code: 'ta', name: 'Tamil', flag: '🇮🇳', description: 'Coming Soon!', disabled: true },
+  { code: "en", name: "English", flag: "🇮🇳", description: "Learn English alphabets and pronunciation" },
+  { code: "hi", name: "Hindi", flag: "🇮🇳", description: "Coming Soon!", disabled: true },
+  { code: "ta", name: "Tamil", flag: "🇮🇳", description: "Coming Soon!", disabled: true },
 ];
 
-export default function ChooseLanguage() {
+// ✅ Move your existing page logic into an inner component
+function ChooseLanguageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
-  const [selectedSection, setSelectedSection] = useState<string>('');
-  const [selectedSubsection, setSelectedSubsection] = useState<string>('');
+
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+  const [selectedSection, setSelectedSection] = useState<string>("");
+  const [selectedSubsection, setSelectedSubsection] = useState<string>("");
   const [isVisible, setIsVisible] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [floatingLetters, setFloatingLetters] = useState<Array<{letter: string, left: string, top: string, delay: string, duration: string}>>([]);
+  const [floatingLetters, setFloatingLetters] = useState<
+    Array<{ letter: string; left: string; top: string; delay: string; duration: string }>
+  >([]);
 
   useEffect(() => {
     // Check authentication first
     const checkAuth = () => {
       try {
-        const savedUser = localStorage.getItem('aksharaUser');
+        const savedUser = localStorage.getItem("aksharaUser");
         if (!savedUser) {
-          router.push('/login');
+          router.push("/login");
           return;
         }
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Error checking authentication:', error);
-        router.push('/login');
+        console.error("Error checking authentication:", error);
+        router.push("/login");
         return;
       }
     };
@@ -40,40 +44,36 @@ export default function ChooseLanguage() {
     checkAuth();
 
     setIsVisible(true);
+
     // Generate floating letters on client side to avoid hydration mismatch
     const letters = [...Array(15)].map((_, i) => ({
       letter: String.fromCharCode(65 + Math.floor(Math.random() * 26)),
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
       delay: `${i * 0.3}s`,
-      duration: `${4 + Math.random() * 2}s`
+      duration: `${4 + Math.random() * 2}s`,
     }));
     setFloatingLetters(letters);
 
     // Read URL parameters to set initial state
-    const section = searchParams.get('section');
-    const subsection = searchParams.get('subsection');
-    const lang = searchParams.get('lang');
-    
+    const section = searchParams.get("section");
+    const subsection = searchParams.get("subsection");
+    const lang = searchParams.get("lang");
+
     if (section) {
-      // Set language and section from URL parameters
-      setSelectedLanguage(lang || 'en');
+      setSelectedLanguage(lang || "en");
       setSelectedSection(section);
-      if (subsection) {
-        setSelectedSubsection(subsection);
-      }
+      if (subsection) setSelectedSubsection(subsection);
     }
   }, [searchParams, router]);
 
   // Auto-redirect for reading sections only when subsection is selected
   useEffect(() => {
-    if (selectedSection === 'reading' && selectedSubsection && selectedLanguage) {
-      let targetUrl = '';
-
-      // English reading redirects only
-      targetUrl = selectedSubsection === 'alphabets'
-        ? `/reading/practice?lang=${selectedLanguage}`
-        : `/reading/practice/numbers?lang=${selectedLanguage}`;
+    if (selectedSection === "reading" && selectedSubsection && selectedLanguage) {
+      const targetUrl =
+        selectedSubsection === "alphabets"
+          ? `/reading/practice?lang=${selectedLanguage}`
+          : `/reading/practice/numbers?lang=${selectedLanguage}`;
 
       router.push(targetUrl);
     }
@@ -94,9 +94,7 @@ export default function ChooseLanguage() {
   }
 
   // If not authenticated, return null (will redirect)
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 relative overflow-hidden">
@@ -122,9 +120,9 @@ export default function ChooseLanguage() {
       {/* Neurogati Logo */}
       <div className="absolute top-6 left-6 z-10 flex items-center gap-3">
         <Link href="/">
-          <img 
-            src="/neurogati.png" 
-            alt="Neurogati" 
+          <img
+            src="/neurogati.png"
+            alt="Neurogati"
             className="w-16 h-16 md:w-20 md:h-20 opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
           />
         </Link>
@@ -143,46 +141,53 @@ export default function ChooseLanguage() {
 
         {!selectedLanguage ? (
           /* Language Selection */
-          <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div
+            className={`transition-all duration-1000 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+            }`}
+          >
             <div className="text-center mb-12">
               <h1 className="text-6xl md:text-7xl font-bold text-white mb-4 drop-shadow-lg animate-fade-in-up">
                 Choose Your Language
               </h1>
-              <p className="text-2xl text-white/90 drop-shadow animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+              <p className="text-2xl text-white/90 drop-shadow animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
                 Select a language to start learning
               </p>
             </div>
 
-            <div className="max-w-lg mx-auto animate-fade-in-up" style={{animationDelay: '0.6s'}}>
+            <div className="max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
               <div className="bg-white/15 backdrop-blur-sm border border-white/30 rounded-2xl p-8 shadow-2xl">
-                <label className="block text-white font-bold text-xl mb-4 text-center">
-                  🌍 Select Language
-                </label>
+                <label className="block text-white font-bold text-xl mb-4 text-center">🌍 Select Language</label>
                 <select
                   value={selectedLanguage}
                   onChange={(e) => e.target.value && setSelectedLanguage(e.target.value)}
                   className="w-full p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border-2 border-white/30 rounded-xl text-white font-bold text-xl focus:border-white/50 focus:outline-none transition-all duration-300 cursor-pointer"
                 >
-                  <option value="" className="bg-purple-900 text-white">Choose a language...</option>
+                  <option value="" className="bg-purple-900 text-white">
+                    Choose a language...
+                  </option>
                   {LANGUAGES.map((lang) => (
-                    <option 
-                      key={lang.code} 
-                      value={lang.disabled ? '' : lang.code}
+                    <option
+                      key={lang.code}
+                      value={lang.disabled ? "" : lang.code}
                       disabled={lang.disabled}
                       className="bg-purple-900 text-white py-2"
                     >
-                      {lang.flag} {lang.name} {lang.disabled ? '(Coming Soon)' : ''}
+                      {lang.flag} {lang.name} {lang.disabled ? "(Coming Soon)" : ""}
                     </option>
                   ))}
                 </select>
-                
+
                 {selectedLanguage && (
                   <div className="mt-6 text-center">
                     <div className="text-white/90 mb-4">
-                      Selected: {LANGUAGES.find(l => l.code === selectedLanguage)?.flag} {LANGUAGES.find(l => l.code === selectedLanguage)?.name}
+                      Selected: {LANGUAGES.find((l) => l.code === selectedLanguage)?.flag}{" "}
+                      {LANGUAGES.find((l) => l.code === selectedLanguage)?.name}
                     </div>
                     <button
-                      onClick={() => {/* Language is already selected, proceed to sections */}}
+                      onClick={() => {
+                        /* Language is already selected, proceed to sections */
+                      }}
                       className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl text-lg transform hover:scale-105 transition-all duration-300 shadow-lg"
                     >
                       Continue →
@@ -196,31 +201,28 @@ export default function ChooseLanguage() {
           /* Section Selection (Writing or Speaking) */
           <div className="animate-fade-in-up">
             <button
-              onClick={() => setSelectedLanguage('')}
+              onClick={() => setSelectedLanguage("")}
               className="mb-8 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-white/30 transition-all duration-300 border border-white/30"
             >
               ← Back to Languages
             </button>
 
             <div className="text-center mb-12">
-              <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-lg">
-                Choose a Section
-              </h1>
-              <p className="text-2xl text-white/90 drop-shadow">
-                What would you like to practice?
-              </p>
+              <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-lg">Choose a Section</h1>
+              <p className="text-2xl text-white/90 drop-shadow">What would you like to practice?</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* Writing Section - Disabled/Premium */}
               <div className="group p-10 bg-gradient-to-br from-gray-500/30 to-gray-600/40 backdrop-blur-sm border-2 border-gray-300/50 text-white rounded-3xl shadow-2xl cursor-not-allowed relative overflow-hidden">
-                {/* Premium Badge */}
                 <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full animate-pulse">
                   🚀 PREMIUM
                 </div>
-                
+
                 <div className="text-8xl mb-6 text-center filter drop-shadow-lg opacity-60">✍️</div>
-                <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-gray-200 to-gray-300 bg-clip-text text-transparent">Writing</h3>
+                <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-gray-200 to-gray-300 bg-clip-text text-transparent">
+                  Writing
+                </h3>
                 <ul className="text-lg space-y-3 opacity-70">
                   <li className="flex items-center gap-3">
                     <span className="w-3 h-3 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"></span>
@@ -239,8 +241,7 @@ export default function ChooseLanguage() {
                     Track your progress
                   </li>
                 </ul>
-                
-                {/* Coming Soon Overlay */}
+
                 <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center rounded-3xl">
                   <div className="text-center">
                     <div className="text-6xl mb-4">🚧</div>
@@ -252,11 +253,13 @@ export default function ChooseLanguage() {
 
               {/* Speaking Section */}
               <div
-                onClick={() => setSelectedSection('reading')}
+                onClick={() => setSelectedSection("reading")}
                 className="group p-10 bg-gradient-to-br from-pink-500/30 to-rose-600/40 backdrop-blur-sm border-2 border-pink-300/50 text-white rounded-3xl hover:from-pink-400/40 hover:to-rose-500/50 hover:border-pink-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-pink-500/25"
               >
                 <div className="text-8xl mb-6 text-center group-hover:animate-bounce filter drop-shadow-lg">🎤</div>
-                <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-pink-200 to-rose-200 bg-clip-text text-transparent">Reading</h3>
+                <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-pink-200 to-rose-200 bg-clip-text text-transparent">
+                  Reading
+                </h3>
                 <ul className="text-lg space-y-3">
                   <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
                     <span className="w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full animate-pulse"></span>
@@ -278,202 +281,15 @@ export default function ChooseLanguage() {
               </div>
             </div>
           </div>
-        ) : (selectedSection === 'writing' || selectedSection === 'reading') && !selectedSubsection ? (
-          /* Subsection Selection for Writing or Speaking */
-          <div className="animate-fade-in-up">
-            <button
-              onClick={() => setSelectedSection('')}
-              className="mb-8 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-white/30 transition-all duration-300 border border-white/30"
-            >
-              ← Back to Sections
-            </button>
-
-            <div className="text-center mb-12">
-              <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-lg">
-                Choose What to Practice
-              </h1>
-              <p className="text-2xl text-white/90 drop-shadow">
-                {selectedSection === 'writing' ? 'Writing Practice Options' : 'Speaking Practice Options'}
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {/* Writing: 3 options, Speaking: 3 options */}
-              {selectedSection === 'writing' ? (
-                selectedLanguage === 'ta' ? (
-                  <>
-                    {/* Tamil Vowels */}
-                    <div
-                      onClick={() => setSelectedSubsection('capital')}
-                      className="group p-8 bg-gradient-to-br from-violet-600/40 to-purple-700/50 backdrop-blur-sm border-2 border-violet-300/50 text-white rounded-3xl hover:from-violet-500/50 hover:to-purple-600/60 hover:border-violet-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-violet-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-violet-200 to-purple-200 bg-clip-text text-transparent filter drop-shadow-lg">அ</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-violet-100 to-purple-100 bg-clip-text text-transparent">Vowels</h3>
-                      <p className="text-center text-violet-100">உயிரெழுத்துக்கள்</p>
-                    </div>
-
-                    {/* Tamil Consonants */}
-                    <div
-                      onClick={() => setSelectedSubsection('small')}
-                      className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">க</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Consonants</h3>
-                      <p className="text-center text-emerald-100">மெய்யெழுத்துக்கள்</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Capital Alphabets */}
-                    <div
-                      onClick={() => setSelectedSubsection('capital')}
-                      className="group p-8 bg-gradient-to-br from-violet-600/40 to-purple-700/50 backdrop-blur-sm border-2 border-violet-300/50 text-white rounded-3xl hover:from-violet-500/50 hover:to-purple-600/60 hover:border-violet-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-violet-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-violet-200 to-purple-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-violet-100 to-purple-100 bg-clip-text text-transparent">Capital Alphabets</h3>
-                      <p className="text-center text-violet-100">A to Z</p>
-                    </div>
-
-                    {/* Small Alphabets */}
-                    <div
-                      onClick={() => setSelectedSubsection('small')}
-                      className="group p-8 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-emerald-200 to-green-200 bg-clip-text text-transparent filter drop-shadow-lg">abc</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Small Alphabets</h3>
-                      <p className="text-center text-emerald-100">a to z</p>
-                    </div>
-
-                    {/* Numbers */}
-                    <div
-                      onClick={() => setSelectedSubsection('numbers')}
-                      className="group p-8 bg-gradient-to-br from-amber-600/40 to-orange-700/50 backdrop-blur-sm border-2 border-amber-300/50 text-white rounded-3xl hover:from-amber-500/50 hover:to-orange-600/60 hover:border-amber-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-amber-500/30"
-                    >
-                      <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
-                      <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-amber-100 to-orange-100 bg-clip-text text-transparent">Numbers</h3>
-                      <p className="text-center text-amber-100">0 to 9</p>
-                    </div>
-                  </>
-                )
-              ) : (
-                <>
-                  {/* Alphabets for Speaking */}
-                  <div
-                    onClick={() => setSelectedSubsection('alphabets')}
-                    className="group p-8 bg-gradient-to-br from-sky-600/40 to-cyan-700/50 backdrop-blur-sm border-2 border-sky-300/50 text-white rounded-3xl hover:from-sky-500/50 hover:to-cyan-600/60 hover:border-sky-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-sky-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-sky-200 to-cyan-200 bg-clip-text text-transparent filter drop-shadow-lg">ABC</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-sky-100 to-cyan-100 bg-clip-text text-transparent">Alphabets</h3>
-                    <p className="text-center text-sky-100">A to Z</p>
-                  </div>
-
-                  {/* Numbers for Speaking */}
-                  <div
-                    onClick={() => setSelectedSubsection('numbers')}
-                    className="group p-8 bg-gradient-to-br from-rose-600/40 to-pink-700/50 backdrop-blur-sm border-2 border-rose-300/50 text-white rounded-3xl hover:from-rose-500/50 hover:to-pink-600/60 hover:border-rose-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-rose-500/30"
-                  >
-                    <div className="text-7xl mb-4 text-center font-bold group-hover:animate-pulse bg-gradient-to-r from-rose-200 to-pink-200 bg-clip-text text-transparent filter drop-shadow-lg">123</div>
-                    <h3 className="text-2xl font-bold mb-3 text-center bg-gradient-to-r from-rose-100 to-pink-100 bg-clip-text text-transparent">Numbers</h3>
-                    <p className="text-center text-rose-100">0 to 9</p>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        ) : selectedSection === 'writing' ? (
-          /* Mode Selection (Practice or Test) for Writing only */
-          <div className="animate-fade-in-up">
-            <button
-              onClick={() => setSelectedSubsection('')}
-              className="mb-8 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-white/30 transition-all duration-300 border border-white/30"
-            >
-              ← Back
-            </button>
-
-            <div className="text-center mb-12">
-              <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-lg">
-                Choose a Mode
-              </h1>
-              <p className="text-2xl text-white/90 drop-shadow">
-                How would you like to learn?
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Practice Mode */}
-              <Link href={
-                selectedSubsection === 'capital'
-                  ? `/practice?lang=${selectedLanguage}`
-                  : selectedSubsection === 'small'
-                  ? `/practice/small?lang=${selectedLanguage}`
-                  : `/practice/numbers?lang=${selectedLanguage}`
-              }>
-                <div className="group p-10 bg-gradient-to-br from-emerald-600/40 to-green-700/50 backdrop-blur-sm border-2 border-emerald-300/50 text-white rounded-3xl hover:from-emerald-500/50 hover:to-green-600/60 hover:border-emerald-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-emerald-500/30">
-                  <div className="text-8xl mb-6 text-center group-hover:animate-bounce filter drop-shadow-lg">✏️</div>
-                  <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-emerald-100 to-green-100 bg-clip-text text-transparent">Practice</h3>
-                  <ul className="text-lg space-y-3">
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full animate-pulse"></span>
-                      Learn at your own pace
-                    </li>
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full animate-pulse"></span>
-                      Instant feedback
-                    </li>
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full animate-pulse"></span>
-                      No pressure
-                    </li>
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full animate-pulse"></span>
-                      Repeat as many times
-                    </li>
-                  </ul>
-                </div>
-              </Link>
-
-              {/* Test Mode */}
-              <Link href={
-                selectedSubsection === 'capital'
-                  ? `/test?lang=${selectedLanguage}`
-                  : selectedSubsection === 'small'
-                  ? `/test/small?lang=${selectedLanguage}`
-                  : `/test/numbers?lang=${selectedLanguage}`
-              }>
-                <div className="group p-10 bg-gradient-to-br from-orange-600/40 to-red-700/50 backdrop-blur-sm border-2 border-orange-300/50 text-white rounded-3xl hover:from-orange-500/50 hover:to-red-600/60 hover:border-orange-200/70 transition-all duration-300 transform hover:scale-105 shadow-2xl cursor-pointer hover:shadow-orange-500/30">
-                  <div className="text-8xl mb-6 text-center group-hover:animate-bounce filter drop-shadow-lg">📝</div>
-                  <h3 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-orange-100 to-red-100 bg-clip-text text-transparent">Test</h3>
-                  <ul className="text-lg space-y-3">
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-400 rounded-full animate-pulse"></span>
-                      Test your knowledge
-                    </li>
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-400 rounded-full animate-pulse"></span>
-                      Single attempt per letter
-                    </li>
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-400 rounded-full animate-pulse"></span>
-                      Score tracking
-                    </li>
-                    <li className="flex items-center gap-3 group-hover:translate-x-2 transition-transform duration-300">
-                      <span className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-400 rounded-full animate-pulse"></span>
-                      Corrected tests for mistakes
-                    </li>
-                  </ul>
-                </div>
-              </Link>
-            </div>
-          </div>
         ) : null}
 
         {/* Info Section */}
-        <div className="mt-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 animate-fade-in-up" style={{animationDelay: '1.2s'}}>
+        <div className="mt-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 animate-fade-in-up" style={{ animationDelay: "1.2s" }}>
           <h3 className="text-3xl font-bold text-white mb-4">About AksharA:</h3>
           <p className="text-white/90 text-lg leading-relaxed">
-            AksharA uses cutting-edge AI technology to provide personalized language learning experiences. 
-            Our handwriting recognition system gives instant feedback to help children master letter formation 
-            and pronunciation through interactive, engaging activities.
+            AksharA uses cutting-edge AI technology to provide personalized language learning experiences. Our handwriting
+            recognition system gives instant feedback to help children master letter formation and pronunciation through
+            interactive, engaging activities.
           </p>
         </div>
       </div>
@@ -481,26 +297,65 @@ export default function ChooseLanguage() {
       {/* Custom Styles */}
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          33% { transform: translateY(-15px) rotate(5deg); }
-          66% { transform: translateY(-8px) rotate(-3deg); }
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          33% {
+            transform: translateY(-15px) rotate(5deg);
+          }
+          66% {
+            transform: translateY(-8px) rotate(-3deg);
+          }
         }
-        
+
         @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        
+
         @keyframes bounce-in {
-          0% { opacity: 0; transform: scale(0.5); }
-          50% { opacity: 1; transform: scale(1.05); }
-          100% { opacity: 1; transform: scale(1); }
+          0% {
+            opacity: 0;
+            transform: scale(0.5);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
-        
-        .animate-float { animation: float 5s ease-in-out infinite; }
-        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; opacity: 0; }
-        .animate-bounce-in { animation: bounce-in 0.5s ease-out forwards; opacity: 0; }
+
+        .animate-float {
+          animation: float 5s ease-in-out infinite;
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .animate-bounce-in {
+          animation: bounce-in 0.5s ease-out forwards;
+          opacity: 0;
+        }
       `}</style>
     </main>
+  );
+}
+
+// ✅ Default export wraps searchParams usage in Suspense (fixes Vercel build)
+export default function ChooseLanguagePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ChooseLanguageInner />
+    </Suspense>
   );
 }
