@@ -1,9 +1,9 @@
 // app/login/page.tsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface LoginResponse {
   success: boolean;
@@ -14,60 +14,60 @@ interface LoginResponse {
   email: string;
 }
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+function LoginInner() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     // Check if user just verified email
-    const verified = searchParams.get('verified');
-    const emailParam = searchParams.get('email');
+    const verified = searchParams.get("verified");
+    const emailParam = searchParams.get("email");
 
-    if (verified === 'true' && emailParam) {
-      setSuccessMessage('Email verified successfully! You can now log in.');
+    if (verified === "true" && emailParam) {
+      setSuccessMessage("Email verified successfully! You can now log in.");
       setEmail(decodeURIComponent(emailParam));
       return;
     }
 
     // Check if user just signed up (legacy flow - can be removed)
-    const signupSuccess = sessionStorage.getItem('signupSuccess');
-    const signupEmail = sessionStorage.getItem('signupEmail');
-    if (signupSuccess === 'true' && signupEmail) {
-      setSuccessMessage('Account created successfully! Please log in.');
+    const signupSuccess = sessionStorage.getItem("signupSuccess");
+    const signupEmail = sessionStorage.getItem("signupEmail");
+    if (signupSuccess === "true" && signupEmail) {
+      setSuccessMessage("Account created successfully! Please log in.");
       setEmail(signupEmail);
-      sessionStorage.removeItem('signupSuccess');
-      sessionStorage.removeItem('signupEmail');
+      sessionStorage.removeItem("signupSuccess");
+      sessionStorage.removeItem("signupEmail");
     }
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setNeedsConfirmation(false);
 
     if (!email.trim()) {
-      setError('Email is required');
+      setError("Email is required");
       return;
     }
 
     if (!password) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -79,11 +79,11 @@ export default function LoginPage() {
         const errorData = await response.json().catch(() => ({}));
 
         // Check if user needs email confirmation
-        if (errorData.message && errorData.message.includes('not confirmed')) {
+        if (errorData.message && errorData.message.includes("not confirmed")) {
           setNeedsConfirmation(true);
-          setError('Your email is not verified. Please confirm your email with the OTP sent to you.');
+          setError("Your email is not verified. Please confirm your email with the OTP sent to you.");
         } else {
-          throw new Error(errorData.message || 'Invalid email or password');
+          throw new Error(errorData.message || "Invalid email or password");
         }
         return;
       }
@@ -91,33 +91,36 @@ export default function LoginPage() {
       const data: LoginResponse = await response.json();
 
       // Decode idToken to get userSub
-      const idTokenPayload = JSON.parse(atob(data.idToken.split('.')[1]));
+      const idTokenPayload = JSON.parse(atob(data.idToken.split(".")[1]));
       const userSub = idTokenPayload.sub;
 
       // Fetch user profile from DynamoDB
       const profileResponse = await fetch(`/api/auth/profile?userSub=${userSub}`);
-      let fullName = '';
+      let fullName = "";
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
-        fullName = profileData.fullName || '';
+        fullName = profileData.fullName || "";
       }
 
       // Save user data to localStorage (combining auth tokens and profile)
-      localStorage.setItem('aksharaUser', JSON.stringify({
-        userSub,
-        email: data.email,
-        fullName: fullName || data.email.split('@')[0], // fallback to email prefix
-        accessToken: data.accessToken,
-        idToken: data.idToken,
-        refreshToken: data.refreshToken,
-        expiresIn: data.expiresIn,
-      }));
+      localStorage.setItem(
+        "aksharaUser",
+        JSON.stringify({
+          userSub,
+          email: data.email,
+          fullName: fullName || data.email.split("@")[0], // fallback to email prefix
+          accessToken: data.accessToken,
+          idToken: data.idToken,
+          refreshToken: data.refreshToken,
+          expiresIn: data.expiresIn,
+        })
+      );
 
       // Redirect to students page
-      router.push('/students');
+      router.push("/students");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -195,14 +198,14 @@ export default function LoginPage() {
                 Signing In...
               </div>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-purple-600 hover:text-purple-800 font-medium">
               Create one
             </Link>
@@ -210,14 +213,19 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm"
-          >
+          <Link href="/" className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm">
             ← Back to Home
           </Link>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
   );
 }
