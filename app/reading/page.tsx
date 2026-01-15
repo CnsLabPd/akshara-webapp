@@ -1,9 +1,9 @@
 // app/reading/page.tsx
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import CharacterCard from '@/components/CharacterCard';
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import CharacterCard from "@/components/CharacterCard";
 
 interface UserData {
   userSub: string;
@@ -20,54 +20,54 @@ interface ProgressData {
   [character: string]: number;
 }
 
-export default function ReadingPage() {
+function ReadingInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<UserData | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<SelectedStudent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState<ProgressData>({});
-  const [selectedType, setSelectedType] = useState<string>('english-alphabets');
+  const [selectedType, setSelectedType] = useState<string>("english-alphabets");
   const [showInstructions, setShowInstructions] = useState(false);
 
   const characterSets = {
-    'english-alphabets': 'abcdefghijklmnopqrstuvwxyz'.split(''),
-    'english-numbers': '0123456789'.split(''),
+    "english-alphabets": "abcdefghijklmnopqrstuvwxyz".split(""),
+    "english-numbers": "0123456789".split(""),
   };
 
   const typeDisplayNames = {
-    'english-alphabets': 'English Alphabets (A-Z)',
-    'english-numbers': 'English Numbers (0-9)',
+    "english-alphabets": "English Alphabets (A-Z)",
+    "english-numbers": "English Numbers (0-9)",
   };
 
   useEffect(() => {
     const checkAuth = () => {
       try {
-        const savedUser = localStorage.getItem('aksharaUser');
+        const savedUser = localStorage.getItem("aksharaUser");
         if (!savedUser) {
-          router.push('/login');
+          router.push("/login");
           return;
         }
         const userData = JSON.parse(savedUser) as UserData;
         setUser(userData);
 
-        const savedStudent = localStorage.getItem('selectedStudent');
+        const savedStudent = localStorage.getItem("selectedStudent");
         if (!savedStudent) {
-          router.push('/students');
+          router.push("/students");
           return;
         }
         const studentData = JSON.parse(savedStudent) as SelectedStudent;
         setSelectedStudent(studentData);
       } catch (error) {
-        console.error('Error reading data:', error);
-        router.push('/login');
+        console.error("Error reading data:", error);
+        router.push("/login");
       }
     };
     checkAuth();
   }, [router]);
 
   useEffect(() => {
-    const type = searchParams.get('type') || 'english-alphabets';
+    const type = searchParams.get("type") || "english-alphabets";
     setSelectedType(type);
   }, [searchParams]);
 
@@ -76,9 +76,10 @@ export default function ReadingPage() {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/recordings/progress?studentId=${selectedStudent.studentId}&type=${selectedType}&t=${Date.now()}`, {
-        cache: 'no-store'
-      });
+      const response = await fetch(
+        `/api/recordings/progress?studentId=${selectedStudent.studentId}&type=${selectedType}&t=${Date.now()}`,
+        { cache: "no-store" }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -87,7 +88,7 @@ export default function ReadingPage() {
         setProgress({});
       }
     } catch (error) {
-      console.error('Error fetching progress:', error);
+      console.error("Error fetching progress:", error);
       setProgress({});
     } finally {
       setIsLoading(false);
@@ -113,19 +114,19 @@ export default function ReadingPage() {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [user, selectedStudent, fetchProgress]);
 
   const handleCharacterClick = (character: string) => {
     const routes = {
-      'english-alphabets': `/reading/practice?char=${character}&lang=en`,
-      'english-numbers': `/reading/practice/numbers?char=${character}&lang=en`,
+      "english-alphabets": `/reading/practice?char=${character}&lang=en`,
+      "english-numbers": `/reading/practice/numbers?char=${character}&lang=en`,
     };
 
     const route = routes[selectedType as keyof typeof routes];
@@ -135,7 +136,7 @@ export default function ReadingPage() {
   };
 
   const handleBack = () => {
-    router.push('/reading/dashboard');
+    router.push("/reading/dashboard");
   };
 
   if (!user || !selectedStudent) {
@@ -156,7 +157,9 @@ export default function ReadingPage() {
             <h1 className="text-4xl font-bold text-white drop-shadow-lg">
               {typeDisplayNames[selectedType as keyof typeof typeDisplayNames]} – Recording
             </h1>
-            <p className="text-white text-lg mt-2 drop-shadow">Student: {selectedStudent.studentName}</p>
+            <p className="text-white text-lg mt-2 drop-shadow">
+              Student: {selectedStudent.studentName}
+            </p>
           </div>
           <button
             onClick={() => setShowInstructions(!showInstructions)}
@@ -166,16 +169,18 @@ export default function ReadingPage() {
           </button>
         </div>
 
-        {/* Instructions Modal */}
         {showInstructions && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowInstructions(false)}>
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowInstructions(false)}
+          >
+            <div
+              className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Recording Instructions</h2>
-                <button
-                  onClick={() => setShowInstructions(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
+                <button onClick={() => setShowInstructions(false)} className="text-gray-500 hover:text-gray-700 text-2xl">
                   ×
                 </button>
               </div>
@@ -192,15 +197,21 @@ export default function ReadingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-purple-600 font-bold text-lg">•</span>
-                  <span><strong className="text-green-600">Green cards</strong> are completed (2/2 recordings)</span>
+                  <span>
+                    <strong className="text-green-600">Green cards</strong> are completed (2/2 recordings)
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-purple-600 font-bold text-lg">•</span>
-                  <span><strong className="text-orange-600">Orange cards</strong> are in progress (1/2 recordings)</span>
+                  <span>
+                    <strong className="text-orange-600">Orange cards</strong> are in progress (1/2 recordings)
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-purple-600 font-bold text-lg">•</span>
-                  <span><strong className="text-blue-600">Blue cards</strong> are not started (0/2 recordings)</span>
+                  <span>
+                    <strong className="text-blue-600">Blue cards</strong> are not started (0/2 recordings)
+                  </span>
                 </li>
               </ul>
 
@@ -252,5 +263,13 @@ export default function ReadingPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ReadingPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReadingInner />
+    </Suspense>
   );
 }
