@@ -1,11 +1,11 @@
 // app/reading/practice/numbers/page.tsx
-'use client';
+"use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
-const NUMBERS = '0123456789'.split('');
+const NUMBERS = "0123456789".split("");
 
 interface UserData {
   userSub: string;
@@ -18,7 +18,7 @@ interface SelectedStudent {
   studentName: string;
 }
 
-export default function ReadingPracticeNumbersPage() {
+function ReadingPracticeNumbersInner() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<UserData | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<SelectedStudent | null>(null);
@@ -26,9 +26,9 @@ export default function ReadingPracticeNumbersPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [attemptsUsed, setAttemptsUsed] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [successMessage, setSuccessMessage] = useState<string>('');
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -37,21 +37,21 @@ export default function ReadingPracticeNumbersPage() {
   const currentNumber = NUMBERS[currentIndex];
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('aksharaUser');
+    const savedUser = localStorage.getItem("aksharaUser");
     if (!savedUser) {
-      window.location.href = '/login';
+      window.location.href = "/login";
       return;
     }
     setUser(JSON.parse(savedUser));
 
-    const savedStudent = localStorage.getItem('selectedStudent');
+    const savedStudent = localStorage.getItem("selectedStudent");
     if (!savedStudent) {
-      window.location.href = '/students';
+      window.location.href = "/students";
       return;
     }
     setSelectedStudent(JSON.parse(savedStudent));
 
-    const charParam = searchParams.get('char');
+    const charParam = searchParams.get("char");
     if (charParam) {
       const numIndex = NUMBERS.indexOf(charParam);
       if (numIndex !== -1) {
@@ -64,9 +64,12 @@ export default function ReadingPracticeNumbersPage() {
     if (!selectedStudent) return;
 
     try {
-      const response = await fetch(`/api/recordings/progress?studentId=${selectedStudent.studentId}&type=english-numbers&t=${Date.now()}`, {
-        cache: 'no-store'
-      });
+      const response = await fetch(
+        `/api/recordings/progress?studentId=${selectedStudent.studentId}&type=english-numbers&t=${Date.now()}`,
+        {
+          cache: "no-store",
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -74,7 +77,7 @@ export default function ReadingPracticeNumbersPage() {
         setAttemptsUsed(attempts);
       }
     } catch (error) {
-      console.error('Error fetching attempts:', error);
+      console.error("Error fetching attempts:", error);
     }
   }, [selectedStudent, currentNumber]);
 
@@ -100,22 +103,22 @@ export default function ReadingPracticeNumbersPage() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         setAudioBlob(audioBlob);
 
         if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current.getTracks().forEach((track) => track.stop());
           streamRef.current = null;
         }
       };
 
       mediaRecorder.start();
       setIsRecording(true);
-      setErrorMessage('');
-      setSuccessMessage('');
+      setErrorMessage("");
+      setSuccessMessage("");
     } catch (error) {
-      console.error('Error starting recording:', error);
-      setErrorMessage('Failed to access microphone. Please grant permission.');
+      console.error("Error starting recording:", error);
+      setErrorMessage("Failed to access microphone. Please grant permission.");
     }
   };
 
@@ -129,39 +132,39 @@ export default function ReadingPracticeNumbersPage() {
   const submitRecording = async () => {
     if (!audioBlob || !user || !selectedStudent) return;
 
-    setUploadStatus('uploading');
-    setErrorMessage('');
-    setSuccessMessage('');
+    setUploadStatus("uploading");
+    setErrorMessage("");
+    setSuccessMessage("");
 
     const formData = new FormData();
-    formData.append('teacherUserId', user.userSub);
-    formData.append('teacherName', user.fullName || '');
-    formData.append('studentId', selectedStudent.studentId);
-    formData.append('studentName', selectedStudent.studentName);
-    formData.append('character', currentNumber);
-    formData.append('audio', audioBlob, 'audio.webm');
+    formData.append("teacherUserId", user.userSub);
+    formData.append("teacherName", user.fullName || "");
+    formData.append("studentId", selectedStudent.studentId);
+    formData.append("studentName", selectedStudent.studentName);
+    formData.append("character", currentNumber);
+    formData.append("audio", audioBlob, "audio.webm");
 
     try {
-      const response = await fetch('/api/audio/upload', {
-        method: 'POST',
+      const response = await fetch("/api/audio/upload", {
+        method: "POST",
         body: formData,
       });
 
       const data = await response.json();
 
       if (response.status === 403) {
-        setUploadStatus('error');
-        setErrorMessage('Maximum attempts exceeded for this character.');
+        setUploadStatus("error");
+        setErrorMessage("Maximum attempts exceeded for this character.");
         return;
       }
 
       if (!response.ok) {
-        setUploadStatus('error');
-        setErrorMessage(data.error || 'Upload failed. Please try again.');
+        setUploadStatus("error");
+        setErrorMessage(data.error || "Upload failed. Please try again.");
         return;
       }
 
-      setUploadStatus('success');
+      setUploadStatus("success");
       setSuccessMessage(`Recording ${data.attemptNumber}/2 uploaded successfully!`);
       setAttemptsUsed(data.attemptNumber);
       setAudioBlob(null);
@@ -174,9 +177,9 @@ export default function ReadingPracticeNumbersPage() {
         }, 2000);
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      setUploadStatus('error');
-      setErrorMessage('Network error. Please try again.');
+      console.error("Upload error:", error);
+      setUploadStatus("error");
+      setErrorMessage("Network error. Please try again.");
     }
   };
 
@@ -184,9 +187,9 @@ export default function ReadingPracticeNumbersPage() {
     if (currentIndex < NUMBERS.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setAudioBlob(null);
-      setUploadStatus('idle');
-      setErrorMessage('');
-      setSuccessMessage('');
+      setUploadStatus("idle");
+      setErrorMessage("");
+      setSuccessMessage("");
     }
   };
 
@@ -194,9 +197,9 @@ export default function ReadingPracticeNumbersPage() {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setAudioBlob(null);
-      setUploadStatus('idle');
-      setErrorMessage('');
-      setSuccessMessage('');
+      setUploadStatus("idle");
+      setErrorMessage("");
+      setSuccessMessage("");
     }
   };
 
@@ -221,9 +224,7 @@ export default function ReadingPracticeNumbersPage() {
           <div className="text-center mb-8">
             <p className="text-gray-600 text-lg mb-2">Current Number</p>
             <p className="text-9xl font-bold text-pink-600 mb-4">{currentNumber}</p>
-            <p className="text-2xl font-semibold text-gray-700">
-              Attempt {attemptsUsed} / 2
-            </p>
+            <p className="text-2xl font-semibold text-gray-700">Attempt {attemptsUsed} / 2</p>
           </div>
 
           {!canRecord && (
@@ -245,21 +246,19 @@ export default function ReadingPracticeNumbersPage() {
               onClick={isRecording ? stopRecording : startRecording}
               disabled={!canRecord}
               className={`px-10 py-6 rounded-xl font-bold text-2xl transition-all shadow-lg flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isRecording
-                  ? 'bg-[#F44336] text-white animate-pulse hover:bg-[#C62828]'
-                  : 'bg-[#4CAF50] text-white hover:bg-[#45a049]'
+                isRecording ? "bg-[#F44336] text-white animate-pulse hover:bg-[#C62828]" : "bg-[#4CAF50] text-white hover:bg-[#45a049]"
               }`}
             >
               <span className="text-4xl">🎤</span>
-              <span>{isRecording ? 'Stop Recording' : 'Start Recording'}</span>
+              <span>{isRecording ? "Stop Recording" : "Start Recording"}</span>
             </button>
 
             <button
               onClick={submitRecording}
-              disabled={!audioBlob || uploadStatus === 'uploading'}
+              disabled={!audioBlob || uploadStatus === "uploading"}
               className="px-10 py-6 bg-[#2196F3] text-white rounded-xl font-bold text-2xl hover:bg-[#1976D2] disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg"
             >
-              {uploadStatus === 'uploading' ? 'Uploading...' : 'Submit'}
+              {uploadStatus === "uploading" ? "Uploading..." : "Submit"}
             </button>
 
             <button
@@ -291,5 +290,13 @@ export default function ReadingPracticeNumbersPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ReadingPracticeNumbersPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReadingPracticeNumbersInner />
+    </Suspense>
   );
 }
