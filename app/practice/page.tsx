@@ -1,34 +1,40 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import DrawingCanvas, { DrawingCanvasRef } from '@/components/DrawingCanvas';
-import DrawingAnimation from '@/components/DrawingAnimation';
-import KeyboardDrawingTutorial from '@/components/KeyboardDrawingTutorial';
-import { characterRecognizer, isCharacterMatch, isCharacterMatchDetailed, isCharacterMatchStrict } from '@/utils/tensorflowModel';
-import { isDesktopDevice } from '@/utils/deviceDetection';
-import { useKeyboardDrawing } from '@/hooks/useKeyboardDrawing';
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import DrawingCanvas, { DrawingCanvasRef } from "@/components/DrawingCanvas";
+import DrawingAnimation from "@/components/DrawingAnimation";
+import KeyboardDrawingTutorial from "@/components/KeyboardDrawingTutorial";
+import {
+  characterRecognizer,
+  isCharacterMatch,
+  isCharacterMatchDetailed,
+  isCharacterMatchStrict,
+} from "@/utils/tensorflowModel";
+import { isDesktopDevice } from "@/utils/deviceDetection";
+import { useKeyboardDrawing } from "@/hooks/useKeyboardDrawing";
 
-const ENGLISH_ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-const TAMIL_VOWELS = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ'];
+const ENGLISH_ALPHABETS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const TAMIL_VOWELS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "ஏ", "ஐ", "ஒ", "ஓ", "ஔ"];
 
-export default function PracticePage() {
+function PracticeInner() {
   const router = useRouter(); // Use router for navigation
   const searchParams = useSearchParams();
-  const language = searchParams.get('lang') || 'en';
-  const ALPHABETS = language === 'ta' ? TAMIL_VOWELS : ENGLISH_ALPHABETS;
+  const language = searchParams.get("lang") || "en";
+  const ALPHABETS = language === "ta" ? TAMIL_VOWELS : ENGLISH_ALPHABETS;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [hasDrawn, setHasDrawn] = useState(false);
-  const [currentDrawing, setCurrentDrawing] = useState<string>('');
+  const [currentDrawing, setCurrentDrawing] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [feedback, setFeedback] = useState<string>('');
-  const [recognizedOutput, setRecognizedOutput] = useState<string>('');
-  const [preprocessedImageUrl, setPreprocessedImageUrl] = useState<string>('');
+  const [feedback, setFeedback] = useState<string>("");
+  const [recognizedOutput, setRecognizedOutput] = useState<string>("");
+  const [preprocessedImageUrl, setPreprocessedImageUrl] = useState<string>("");
   const [showCelebration, setShowCelebration] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const [modelReady, setModelReady] = useState(false);
-  const [modelError, setModelError] = useState<string>('');
+  const [modelError, setModelError] = useState<string>("");
   const canvasRef = useRef<DrawingCanvasRef>(null);
 
   // Keyboard drawing mode states
@@ -40,15 +46,15 @@ export default function PracticePage() {
   useEffect(() => {
     const initModel = async () => {
       try {
-        setFeedback('Loading AI model...');
+        setFeedback("Loading AI model...");
         await characterRecognizer.loadModel();
         setModelReady(true);
-        setFeedback('');
-        console.log('TensorFlow.js model loaded successfully');
+        setFeedback("");
+        console.log("TensorFlow.js model loaded successfully");
       } catch (error) {
-        console.error('Error loading TensorFlow.js model:', error);
-        setModelError('Failed to load AI model. Please refresh the page.');
-        setFeedback('');
+        console.error("Error loading TensorFlow.js model:", error);
+        setModelError("Failed to load AI model. Please refresh the page.");
+        setFeedback("");
       }
     };
 
@@ -65,8 +71,8 @@ export default function PracticePage() {
     setIsDesktop(isDesktopDevice());
 
     // Load keyboard drawing setting from localStorage
-    const savedSetting = localStorage.getItem('keyboardDrawingEnabled');
-    if (savedSetting === 'true') {
+    const savedSetting = localStorage.getItem("keyboardDrawingEnabled");
+    if (savedSetting === "true") {
       setKeyboardDrawingEnabled(true);
     }
   }, []);
@@ -74,11 +80,11 @@ export default function PracticePage() {
   // Handle keyboard drawing toggle
   const handleKeyboardDrawingToggle = (enabled: boolean) => {
     setKeyboardDrawingEnabled(enabled);
-    localStorage.setItem('keyboardDrawingEnabled', enabled.toString());
+    localStorage.setItem("keyboardDrawingEnabled", enabled.toString());
 
     // Show tutorial on first enable
     if (enabled) {
-      const tutorialSeen = localStorage.getItem('keyboardDrawingTutorialSeen');
+      const tutorialSeen = localStorage.getItem("keyboardDrawingTutorialSeen");
       if (!tutorialSeen) {
         setShowTutorial(true);
       }
@@ -90,7 +96,7 @@ export default function PracticePage() {
   const handleDrawingComplete = (canvas: HTMLCanvasElement) => {
     setHasDrawn(true);
     // Store canvas reference for TensorFlow.js processing
-    setCurrentDrawing(canvas.toDataURL('image/png'));
+    setCurrentDrawing(canvas.toDataURL("image/png"));
   };
 
   const handleSubmit = async () => {
@@ -98,49 +104,43 @@ export default function PracticePage() {
 
     const canvas = canvasRef.current?.getCanvas();
     if (!canvas) {
-      setFeedback('Error: Canvas not available');
+      setFeedback("Error: Canvas not available");
       return;
     }
 
     setIsProcessing(true);
-    setFeedback('AI is analyzing your writing...');
-    setRecognizedOutput('');
-    setPreprocessedImageUrl('');
+    setFeedback("AI is analyzing your writing...");
+    setRecognizedOutput("");
+    setPreprocessedImageUrl("");
 
     try {
-      // Use TensorFlow.js model for character recognition
       const result = await characterRecognizer.recognizeCharacter(canvas);
-      
-      console.log('TensorFlow.js prediction:', result);
-      console.log('Expected letter:', currentLetter);
 
-      
-      // Show what the model recognized with confidence
+      console.log("TensorFlow.js prediction:", result);
+      console.log("Expected letter:", currentLetter);
+
       const confidencePercent = Math.round(result.confidence * 100);
       setRecognizedOutput(`${result.letter} (${confidencePercent}% confidence)`);
-      
-      // Show the preprocessed image that was sent to the model
+
       if (result.preprocessedImageUrl) {
         setPreprocessedImageUrl(result.preprocessedImageUrl);
       }
 
-      // Strict educational character matching - only exact case matches count
-      const hasGoodConfidence = result.confidence >= characterRecognizer.getConfidenceThreshold(result.letter);
-      
-      let matchResult;
-      if (language === 'ta') {
-        // For Tamil, we'll accept any drawing as correct for now since the model isn't trained for Tamil
+      const hasGoodConfidence =
+        result.confidence >= characterRecognizer.getConfidenceThreshold(result.letter);
+
+      let matchResult: { isCorrect: boolean; isWrongCase: boolean; feedback: string };
+      if (language === "ta") {
         matchResult = {
           isCorrect: true,
           isWrongCase: false,
-          feedback: `Perfect! You wrote "${currentLetter}" correctly! 🎉`
+          feedback: `Perfect! You wrote "${currentLetter}" correctly! 🎉`,
         };
       } else {
-        matchResult = isCharacterMatchStrict(result.letter, currentLetter, 'capital');
+        matchResult = isCharacterMatchStrict(result.letter, currentLetter, "capital");
       }
 
-      if (matchResult.isCorrect && (hasGoodConfidence || language === 'ta')) {
-        // Advance for correct matches (Tamil or English with good confidence)
+      if (matchResult.isCorrect && (hasGoodConfidence || language === "ta")) {
         setScore(score + 1);
         setFeedback(matchResult.feedback);
         setShowCelebration(true);
@@ -149,33 +149,30 @@ export default function PracticePage() {
           setShowCelebration(false);
           if (currentIndex < ALPHABETS.length - 1) {
             setCurrentIndex(currentIndex + 1);
-            setFeedback('');
-            setRecognizedOutput('');
-            setPreprocessedImageUrl('');
+            setFeedback("");
+            setRecognizedOutput("");
+            setPreprocessedImageUrl("");
             setHasDrawn(false);
-            setCurrentDrawing('');
+            setCurrentDrawing("");
             canvasRef.current?.clear();
           }
           setIsProcessing(false);
         }, 2500);
       } else if (matchResult.isWrongCase && hasGoodConfidence) {
-        // Educational feedback for wrong case but right letter
         setFeedback(matchResult.feedback);
         setIsProcessing(false);
       } else if (matchResult.isCorrect && !hasGoodConfidence) {
-        // Right letter, right case, but low confidence
-        setFeedback(`Good job! Try writing more clearly next time! ✏️`);
+        setFeedback("Good job! Try writing more clearly next time! ✏️");
         setIsProcessing(false);
       } else {
-        // Wrong letter entirely or other issues
         setFeedback(matchResult.feedback);
         setIsProcessing(false);
       }
     } catch (error) {
-      console.error('TensorFlow.js Recognition Error:', error);
-      setFeedback('Error processing your writing. Please try again.');
-      setRecognizedOutput('');
-      setPreprocessedImageUrl('');
+      console.error("TensorFlow.js Recognition Error:", error);
+      setFeedback("Error processing your writing. Please try again.");
+      setRecognizedOutput("");
+      setPreprocessedImageUrl("");
       setIsProcessing(false);
     }
   };
@@ -183,11 +180,11 @@ export default function PracticePage() {
   const nextLetter = () => {
     if (currentIndex < ALPHABETS.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setFeedback('');
-      setRecognizedOutput('');
-      setPreprocessedImageUrl('');
+      setFeedback("");
+      setRecognizedOutput("");
+      setPreprocessedImageUrl("");
       setHasDrawn(false);
-      setCurrentDrawing('');
+      setCurrentDrawing("");
       canvasRef.current?.clear();
     }
   };
@@ -195,21 +192,21 @@ export default function PracticePage() {
   const previousLetter = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
-      setFeedback('');
-      setRecognizedOutput('');
-      setPreprocessedImageUrl('');
+      setFeedback("");
+      setRecognizedOutput("");
+      setPreprocessedImageUrl("");
       setHasDrawn(false);
-      setCurrentDrawing('');
+      setCurrentDrawing("");
       canvasRef.current?.clear();
     }
   };
 
   const handleRetry = () => {
-    setFeedback('');
-    setRecognizedOutput('');
-    setPreprocessedImageUrl('');
+    setFeedback("");
+    setRecognizedOutput("");
+    setPreprocessedImageUrl("");
     setHasDrawn(false);
-    setCurrentDrawing('');
+    setCurrentDrawing("");
     canvasRef.current?.clear();
   };
 
@@ -219,16 +216,15 @@ export default function PracticePage() {
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="relative">
-            {/* Confetti Effect */}
             <div className="absolute inset-0 flex items-center justify-center">
               {[...Array(20)].map((_, i) => (
                 <div
                   key={i}
                   className="absolute w-3 h-3 rounded-full animate-ping"
                   style={{
-                    backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'][i % 6],
+                    backgroundColor: ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8"][i % 6],
                     animationDelay: `${i * 0.1}s`,
-                    animationDuration: '1s',
+                    animationDuration: "1s",
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
                   }}
@@ -236,51 +232,19 @@ export default function PracticePage() {
               ))}
             </div>
 
-            {/* Green Tick Mark */}
             <div className="relative bg-white rounded-full p-8 shadow-2xl animate-bounce">
-              <svg
-                className="w-48 h-48 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                style={{
-                  animation: 'checkmark 0.5s ease-in-out',
-                }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M5 13l4 4L19 7"
-                  style={{
-                    strokeDasharray: 100,
-                    strokeDashoffset: 100,
-                    animation: 'draw 0.5s ease-in-out forwards',
-                  }}
-                />
+              <svg className="w-48 h-48 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
 
-            {/* Success Messages */}
             <div className="text-center mt-6 space-y-3">
-              <h2 className="text-6xl font-bold text-white drop-shadow-lg animate-pulse">
-                Amazing! 🌟
-              </h2>
-              <p className="text-3xl text-yellow-300 font-semibold drop-shadow">
-                You did it!
-              </p>
+              <h2 className="text-6xl font-bold text-white drop-shadow-lg animate-pulse">Amazing! 🌟</h2>
+              <p className="text-3xl text-yellow-300 font-semibold drop-shadow">You did it!</p>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes draw {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}</style>
 
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
@@ -314,7 +278,6 @@ export default function PracticePage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-2xl p-8">
-          {/* Settings Toggle - Desktop Only */}
           {isDesktop && (
             <div className="mb-6 pb-6 border-b border-gray-200">
               <div className="flex items-center justify-between max-w-md mx-auto">
@@ -339,26 +302,13 @@ export default function PracticePage() {
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               Practice writing: <span className="text-green-600">{currentLetter}</span>
             </h2>
-            {modelError ? (
-              <p className="text-red-600">{modelError}</p>
-            ) : modelReady ? (
-              <p className="text-gray-600">Write the letter, then click Submit</p>
-            ) : (
-              <p className="text-orange-600">Loading AI model...</p>
-            )}
+            {modelError ? <p className="text-red-600">{modelError}</p> : modelReady ? <p className="text-gray-600">Write the letter, then click Submit</p> : <p className="text-orange-600">Loading AI model...</p>}
           </div>
 
-          {/* Visual Indicator - Desktop Only */}
           {isDesktop && keyboardDrawingEnabled && (
             <div className="flex justify-center mb-4">
-              <div
-                className={`px-6 py-3 rounded-full font-semibold text-lg shadow-lg transition-all duration-200 ${
-                  isWKeyPressed
-                    ? 'bg-green-500 text-white animate-pulse'
-                    : 'bg-yellow-400 text-gray-800'
-                }`}
-              >
-                {isWKeyPressed ? '✏️ Writing Enabled' : '🔓 Hold W to Write'}
+              <div className={`px-6 py-3 rounded-full font-semibold text-lg shadow-lg transition-all duration-200 ${isWKeyPressed ? "bg-green-500 text-white animate-pulse" : "bg-yellow-400 text-gray-800"}`}>
+                {isWKeyPressed ? "✏️ Writing Enabled" : "🔓 Hold W to Write"}
               </div>
             </div>
           )}
@@ -392,23 +342,23 @@ export default function PracticePage() {
               disabled={!hasDrawn || isProcessing || !modelReady || !!modelError}
               className="px-12 py-4 bg-green-500 text-white rounded-lg font-bold text-2xl hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
-              {isProcessing ? 'AI Analyzing...' : 'Submit'}
+              {isProcessing ? "AI Analyzing..." : "Submit"}
             </button>
           </div>
 
           {feedback && (
-            <div className={`text-center p-4 rounded-lg mb-6 ${
-              feedback.includes('correct') || feedback.includes('Great')
-                ? 'bg-green-100 text-green-800'
-                : feedback.includes('Try again')
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-blue-100 text-blue-800'
-            }`}>
+            <div
+              className={`text-center p-4 rounded-lg mb-6 ${
+                feedback.includes("correct") || feedback.includes("Great")
+                  ? "bg-green-100 text-green-800"
+                  : feedback.includes("Try again")
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-blue-100 text-blue-800"
+              }`}
+            >
               <p className="text-xl font-semibold">{feedback}</p>
             </div>
           )}
-
-
 
           {isProcessing && (
             <div className="text-center mt-4">
@@ -434,29 +384,19 @@ export default function PracticePage() {
           </div>
         </div>
 
-        <div className="mt-8 bg-white/80 rounded-xl p-6">
-          {/* <h3 className="text-2xl font-bold text-gray-800 mb-3">Practice Tips:</h3>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 text-lg">
-            <li>Take your time - no rush!</li>
-            <li>Try to write clearly and neatly</li>
-            <li>You can practice each letter as many times as you want</li>
-            <li>Use the Previous/Next buttons to navigate freely</li>
-          </ul> */}
-        </div>
+        <div className="mt-8 bg-white/80 rounded-xl p-6"></div>
       </div>
 
-      {/* Drawing Animation Modal */}
-      <DrawingAnimation
-        character={currentLetter}
-        isVisible={showAnimation}
-        onClose={() => setShowAnimation(false)}
-      />
-
-      {/* Keyboard Drawing Tutorial Modal */}
-      <KeyboardDrawingTutorial
-        isOpen={showTutorial}
-        onClose={() => setShowTutorial(false)}
-      />
+      <DrawingAnimation character={currentLetter} isVisible={showAnimation} onClose={() => setShowAnimation(false)} />
+      <KeyboardDrawingTutorial isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
     </main>
+  );
+}
+
+export default function PracticePage() {
+  return (
+    <Suspense fallback={null}>
+      <PracticeInner />
+    </Suspense>
   );
 }
