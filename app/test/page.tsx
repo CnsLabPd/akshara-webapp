@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DrawingCanvas, { DrawingCanvasRef } from '@/components/DrawingCanvas';
@@ -12,7 +12,7 @@ import { useKeyboardDrawing } from '@/hooks/useKeyboardDrawing';
 const ENGLISH_ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const TAMIL_VOWELS = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ'];
 
-export default function TestPage() {
+function TestPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const language = searchParams.get('lang') || 'en';
@@ -103,14 +103,14 @@ export default function TestPage() {
     try {
       // Use TensorFlow.js model for character recognition
       const result = await characterRecognizer.recognizeCharacter(canvas);
-      
+
       console.log('TensorFlow.js prediction:', result);
       console.log('Expected letter:', currentLetter);
 
       // Show what the model recognized with confidence
       const confidencePercent = Math.round(result.confidence * 100);
       setRecognizedOutput(`${result.letter} (${confidencePercent}% confidence)`);
-      
+
       // Show the preprocessed image that was sent to the model
       if (result.preprocessedImageUrl) {
         setPreprocessedImageUrl(result.preprocessedImageUrl);
@@ -118,7 +118,7 @@ export default function TestPage() {
 
       // Use strict educational character matching for test mode
       const hasGoodConfidence = result.confidence >= characterRecognizer.getConfidenceThreshold(result.letter);
-      
+
       let matchResult;
       if (language === 'ta') {
         // For Tamil, we'll accept any drawing as correct for now since the model isn't trained for Tamil
@@ -311,7 +311,6 @@ export default function TestPage() {
         </div>
       )}
 
-
       <style jsx>{`
         @keyframes draw {
           to {
@@ -445,8 +444,8 @@ export default function TestPage() {
                 <div className="text-center">
                   <p className="text-sm text-gray-600 mb-2">28x28 pixels, normalized</p>
                   <div className="inline-block p-2 bg-white rounded-lg shadow-lg">
-                    <img 
-                      src={preprocessedImageUrl} 
+                    <img
+                      src={preprocessedImageUrl}
                       alt="Preprocessed input"
                       className="w-32 h-32 image-rendering-pixelated border border-gray-300"
                       style={{ imageRendering: 'pixelated' }}
@@ -486,5 +485,13 @@ export default function TestPage() {
         onClose={() => setShowTutorial(false)}
       />
     </main>
+  );
+}
+
+export default function TestPage() {
+  return (
+    <Suspense fallback={null}>
+      <TestPageContent />
+    </Suspense>
   );
 }
