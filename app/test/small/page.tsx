@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DrawingCanvas, { DrawingCanvasRef } from '@/components/DrawingCanvas';
@@ -12,7 +12,7 @@ import { useKeyboardDrawing } from '@/hooks/useKeyboardDrawing';
 const ENGLISH_ALPHABETS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 const TAMIL_CONSONANTS = ['க', 'ங', 'ச', 'ஞ', 'ட', 'ண', 'த', 'ந', 'ப', 'ம', 'ய', 'ர', 'ல', 'வ', 'ழ', 'ள', 'ற', 'ன'];
 
-export default function TestSmallPage() {
+function TestSmallPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const language = searchParams.get('lang') || 'en';
@@ -103,14 +103,14 @@ export default function TestSmallPage() {
     try {
       // Use TensorFlow.js model for character recognition
       const result = await characterRecognizer.recognizeCharacter(canvas);
-      
+
       console.log('TensorFlow.js prediction:', result);
       console.log('Expected letter:', currentLetter);
 
       // Show what the model recognized with confidence
       const confidencePercent = Math.round(result.confidence * 100);
       setRecognizedOutput(`${result.letter} (${confidencePercent}% confidence)`);
-      
+
       // Show the preprocessed image that was sent to the model
       if (result.preprocessedImageUrl) {
         setPreprocessedImageUrl(result.preprocessedImageUrl);
@@ -118,10 +118,10 @@ export default function TestSmallPage() {
 
       // Use strict educational character matching for small letters test mode
       const hasGoodConfidence = result.confidence >= characterRecognizer.getConfidenceThreshold(result.letter);
-      
+
       let matchResult;
       let isSpecialCaseCorrect = false;
-      
+
       if (language === 'ta') {
         // For Tamil, we'll accept any drawing as correct for now since the model isn't trained for Tamil
         matchResult = {
@@ -132,9 +132,9 @@ export default function TestSmallPage() {
       } else {
         matchResult = isCharacterMatchStrict(result.letter, currentLetter, 'small');
         // Special case for 'c' and 'f' in small alphabets test: accept both upper and lower case
-        isSpecialCaseCorrect = (currentLetter === 'c' || currentLetter === 'f') && 
-                              (result.letter === currentLetter || result.letter === currentLetter.toUpperCase()) &&
-                              hasGoodConfidence;
+        isSpecialCaseCorrect = (currentLetter === 'c' || currentLetter === 'f') &&
+          (result.letter === currentLetter || result.letter === currentLetter.toUpperCase()) &&
+          hasGoodConfidence;
       }
 
       if ((matchResult.isCorrect && (hasGoodConfidence || language === 'ta')) || isSpecialCaseCorrect) {
@@ -491,5 +491,13 @@ export default function TestSmallPage() {
         onClose={() => setShowTutorial(false)}
       />
     </main>
+  );
+}
+
+export default function TestSmallPage() {
+  return (
+    <Suspense fallback={null}>
+      <TestSmallPageContent />
+    </Suspense>
   );
 }
