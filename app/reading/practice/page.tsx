@@ -1,7 +1,7 @@
 // app/reading/practice/page.tsx
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -18,7 +18,7 @@ interface SelectedStudent {
   studentName: string;
 }
 
-export default function ReadingPracticePage() {
+function ReadingPracticePageContent() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<UserData | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<SelectedStudent | null>(null);
@@ -64,9 +64,12 @@ export default function ReadingPracticePage() {
     if (!selectedStudent) return;
 
     try {
-      const response = await fetch(`/api/recordings/progress?studentId=${selectedStudent.studentId}&type=english-alphabets&t=${Date.now()}`, {
-        cache: 'no-store'
-      });
+      const response = await fetch(
+        `/api/recordings/progress?studentId=${selectedStudent.studentId}&type=english-alphabets&t=${Date.now()}`,
+        {
+          cache: 'no-store'
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -291,5 +294,13 @@ export default function ReadingPracticePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ReadingPracticePage() {
+  return (
+    <Suspense fallback={null}>
+      <ReadingPracticePageContent />
+    </Suspense>
   );
 }
