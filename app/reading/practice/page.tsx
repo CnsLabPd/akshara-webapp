@@ -208,23 +208,27 @@ function ReadingPracticePageContent() {
   const canRecord = attemptsUsed < 2;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-pink-400 via-rose-300 to-purple-300 p-4 sm:p-8">
       <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <Link href="/reading?type=english-alphabets">
-            <button className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
+          <Link href="/reading?type=english-alphabets" className="w-full sm:w-auto">
+            <button className="w-full sm:w-auto px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
               ← Back
             </button>
           </Link>
-          <h1 className="text-5xl font-bold text-white drop-shadow-lg">Audio Data Recording - Alphabets</h1>
-          <div className="w-24"></div>
+
+          <h1 className="text-3xl sm:text-5xl font-bold text-white drop-shadow-lg text-center">
+            Audio Data Recording - Alphabets
+          </h1>
+
+          <div className="hidden sm:block w-24"></div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-2xl p-8">
+        <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8">
           <div className="text-center mb-8">
             <p className="text-gray-600 text-lg mb-2">Current Letter</p>
-            <p className="text-9xl font-bold text-pink-600 mb-4">{currentLetter}</p>
-            <p className="text-2xl font-semibold text-gray-700">
+            <p className="text-7xl sm:text-9xl font-bold text-pink-600 mb-4">{currentLetter}</p>
+            <p className="text-xl sm:text-2xl font-semibold text-gray-700">
               Attempt {attemptsUsed} / 2
             </p>
           </div>
@@ -235,11 +239,11 @@ function ReadingPracticePageContent() {
             </div>
           )}
 
-          <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex lg:justify-center lg:items-center mb-6">
             <button
               onClick={handlePrevious}
               disabled={currentIndex === 0}
-              className="px-6 py-4 bg-gray-500 text-white rounded-xl font-bold text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
+              className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gray-500 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               ← Previous
             </button>
@@ -247,20 +251,20 @@ function ReadingPracticePageContent() {
             <button
               onClick={isRecording ? stopRecording : startRecording}
               disabled={!canRecord}
-              className={`px-10 py-6 rounded-xl font-bold text-2xl transition-all shadow-lg flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`w-full px-4 sm:px-10 py-4 sm:py-6 rounded-xl font-bold text-base sm:text-2xl transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isRecording
                   ? 'bg-[#F44336] text-white animate-pulse hover:bg-[#C62828]'
                   : 'bg-[#4CAF50] text-white hover:bg-[#45a049]'
               }`}
             >
-              <span className="text-4xl">🎤</span>
+              <span className="text-3xl sm:text-4xl">🎤</span>
               <span>{isRecording ? 'Stop Recording' : 'Start Recording'}</span>
             </button>
 
             <button
               onClick={submitRecording}
               disabled={!audioBlob || uploadStatus === 'uploading'}
-              className="px-10 py-6 bg-[#2196F3] text-white rounded-xl font-bold text-2xl hover:bg-[#1976D2] disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg"
+              className="w-full px-4 sm:px-10 py-4 sm:py-6 bg-[#2196F3] text-white rounded-xl font-bold text-base sm:text-2xl hover:bg-[#1976D2] disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg"
             >
               {uploadStatus === 'uploading' ? 'Uploading...' : 'Submit'}
             </button>
@@ -268,7 +272,7 @@ function ReadingPracticePageContent() {
             <button
               onClick={handleNext}
               disabled={currentIndex === ALPHABETS.length - 1}
-              className="px-6 py-4 bg-gray-500 text-white rounded-xl font-bold text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
+              className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gray-500 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
               Next →
             </button>
@@ -282,13 +286,13 @@ function ReadingPracticePageContent() {
 
           {successMessage && (
             <div className="text-center p-4 rounded-lg mb-6 bg-green-100 text-green-800 border border-green-300">
-              <p className="text-xl font-semibold">{successMessage}</p>
+              <p className="text-lg sm:text-xl font-semibold">{successMessage}</p>
             </div>
           )}
 
           {errorMessage && (
             <div className="text-center p-4 rounded-lg mb-6 bg-red-100 text-red-800 border border-red-300">
-              <p className="text-xl font-semibold">{errorMessage}</p>
+              <p className="text-lg sm:text-xl font-semibold">{errorMessage}</p>
             </div>
           )}
         </div>
