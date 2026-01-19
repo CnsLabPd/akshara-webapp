@@ -1,3 +1,4 @@
+// app/students/page.tsx:
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -116,10 +117,13 @@ export default function StudentsPage() {
   };
 
   const handleSelectStudent = (student: Student) => {
-    localStorage.setItem('selectedStudent', JSON.stringify({
-      studentId: student.studentId,
-      studentName: student.studentName,
-    }));
+    localStorage.setItem(
+      'selectedStudent',
+      JSON.stringify({
+        studentId: student.studentId,
+        studentName: student.studentName,
+      })
+    );
     router.push('/reading/dashboard');
   };
 
@@ -132,30 +136,30 @@ export default function StudentsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 p-6">
+    <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl shadow-2xl p-8">
+        <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8">
           {/* Header with Title and Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">My Students</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">My Students</h1>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={() => setShowInstructions(!showInstructions)}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
               >
                 Instructions
               </button>
               <button
                 onClick={handleCreateStudent}
                 disabled={isCreating}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-6 rounded-lg transition-all disabled:opacity-50"
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-6 rounded-lg transition-all disabled:opacity-50"
               >
                 {isCreating ? 'Adding...' : 'Add Student'}
               </button>
               <button
                 onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
               >
                 Logout
               </button>
@@ -164,9 +168,9 @@ export default function StudentsPage() {
 
           {/* Instructions Modal */}
           {showInstructions && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <div className="flex justify-between items-start mb-3">
-                <h2 className="text-xl font-semibold text-blue-900">Instructions</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-6">
+              <div className="flex justify-between items-start mb-3 gap-3">
+                <h2 className="text-lg sm:text-xl font-semibold text-blue-900">Instructions</h2>
                 <button
                   onClick={() => setShowInstructions(false)}
                   className="text-blue-600 hover:text-blue-800 font-bold text-xl"
@@ -174,7 +178,7 @@ export default function StudentsPage() {
                   ×
                 </button>
               </div>
-              <div className="text-blue-800 space-y-2">
+              <div className="text-blue-800 space-y-2 text-sm sm:text-base">
                 <p>1. Click "Add Student" to create a new student profile automatically</p>
                 <p>2. Students will be named as "Student 1", "Student 2", etc.</p>
                 <p>3. Click on any student card to select them and start the reading activity</p>
@@ -203,12 +207,14 @@ export default function StudentsPage() {
           {filteredStudents.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">
-                {searchQuery ? 'No students found matching your search.' : 'No students added yet. Click "Add Student" to create one.'}
+                {searchQuery
+                  ? 'No students found matching your search.'
+                  : 'No students added yet. Click "Add Student" to create one.'}
               </p>
             </div>
           ) : (
             <div className="max-h-[600px] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredStudents.map((student) => (
                   <div
                     key={student.studentId}
