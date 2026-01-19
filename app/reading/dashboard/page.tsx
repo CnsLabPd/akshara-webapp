@@ -149,21 +149,23 @@ export default function ReadingDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 p-4">
+    <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
           <button
             onClick={handleBackToStudents}
-            className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg"
+            className="w-full sm:w-auto px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg"
           >
             ← Back to Students
           </button>
-          <h1 className="text-4xl font-bold text-white drop-shadow-lg text-center">
+
+          <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg text-center">
             Audio Data Recording
           </h1>
+
           <button
             onClick={() => setShowInstructions(!showInstructions)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition-all transform sm:hover:scale-105 shadow-lg flex items-center justify-center gap-2"
           >
             💡 Instructions
           </button>
@@ -171,9 +173,9 @@ export default function ReadingDashboardPage() {
 
         {showInstructions && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowInstructions(false)}>
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Recording Instructions</h2>
+            <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6 gap-3">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Recording Instructions</h2>
                 <button
                   onClick={() => setShowInstructions(false)}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -188,8 +190,8 @@ export default function ReadingDashboardPage() {
                 </p>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800 mb-4">How to Record:</h3>
-              <ol className="space-y-3 text-gray-700">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">How to Record:</h3>
+              <ol className="space-y-3 text-gray-700 text-sm sm:text-base">
                 <li className="flex items-start gap-3">
                   <span className="text-purple-600 font-bold text-lg">1.</span>
                   <span>Choose English Alphabets (A-Z) or Numbers (0-9) to begin</span>
@@ -228,9 +230,9 @@ export default function ReadingDashboardPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-2xl p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
               {selectedStudent.studentName}'s Progress
             </h2>
             <p className="text-gray-600">
@@ -250,25 +252,25 @@ export default function ReadingDashboardPage() {
 
         {!isLoading && combinedProgress && (
           <>
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">
                 English Alphabets (A-Z) & Numbers (0-9) Progress
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                  <div className="text-4xl font-bold text-green-600 mb-2">{combinedProgress.completed}</div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="text-3xl sm:text-4xl font-bold text-green-600 mb-2">{combinedProgress.completed}</div>
                   <div className="text-sm text-gray-600">Completed</div>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-                  <div className="text-4xl font-bold text-orange-600 mb-2">{combinedProgress.inProgress}</div>
+                <div className="p-4 sm:p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+                  <div className="text-3xl sm:text-4xl font-bold text-orange-600 mb-2">{combinedProgress.inProgress}</div>
                   <div className="text-sm text-gray-600">In Progress</div>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg border border-gray-200">
-                  <div className="text-4xl font-bold text-gray-600 mb-2">{combinedProgress.notStarted}</div>
+                <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg border border-gray-200">
+                  <div className="text-3xl sm:text-4xl font-bold text-gray-600 mb-2">{combinedProgress.notStarted}</div>
                   <div className="text-sm text-gray-600">Not Started</div>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
-                  <div className="text-4xl font-bold text-purple-600 mb-2">{combinedProgress.completionPercentage}%</div>
+                <div className="p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+                  <div className="text-3xl sm:text-4xl font-bold text-purple-600 mb-2">{combinedProgress.completionPercentage}%</div>
                   <div className="text-sm text-gray-600">Complete</div>
                 </div>
               </div>
@@ -281,27 +283,27 @@ export default function ReadingDashboardPage() {
               />
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Select Recording Type</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Select Recording Type</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => handlePracticeTypeClick('english-alphabets')}
-                  className="p-6 bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-purple-300 rounded-xl hover:from-purple-200 hover:to-indigo-200 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="p-4 sm:p-6 bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-purple-300 rounded-xl hover:from-purple-200 hover:to-indigo-200 transition-all duration-300 transform sm:hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   <div className="text-center">
                     <div className="text-4xl mb-3">🔤</div>
-                    <h4 className="text-xl font-bold text-gray-800 mb-2">English Alphabets (A-Z)</h4>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">English Alphabets (A-Z)</h4>
                     <p className="text-sm text-gray-600">Record letters A to Z</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => handlePracticeTypeClick('english-numbers')}
-                  className="p-6 bg-gradient-to-br from-blue-100 to-cyan-100 border-2 border-blue-300 rounded-xl hover:from-blue-200 hover:to-cyan-200 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="p-4 sm:p-6 bg-gradient-to-br from-blue-100 to-cyan-100 border-2 border-blue-300 rounded-xl hover:from-blue-200 hover:to-cyan-200 transition-all duration-300 transform sm:hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   <div className="text-center">
                     <div className="text-4xl mb-3">🔢</div>
-                    <h4 className="text-xl font-bold text-gray-800 mb-2">English Numbers (0-9)</h4>
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">English Numbers (0-9)</h4>
                     <p className="text-sm text-gray-600">Record numbers 0 to 9</p>
                   </div>
                 </button>
