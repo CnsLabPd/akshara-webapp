@@ -144,26 +144,29 @@ function ReadingInner() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 p-4">
+    <main className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        {/* Header: stack on mobile, row on desktop */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
           <button
             onClick={handleBack}
-            className="px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg"
+            className="w-full sm:w-auto px-6 py-3 bg-white text-gray-700 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg"
           >
             ← Back
           </button>
+
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-white drop-shadow-lg">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">
               {typeDisplayNames[selectedType as keyof typeof typeDisplayNames]} – Recording
             </h1>
-            <p className="text-white text-lg mt-2 drop-shadow">
+            <p className="text-white text-base sm:text-lg mt-2 drop-shadow">
               Student: {selectedStudent.studentName}
             </p>
           </div>
+
           <button
             onClick={() => setShowInstructions(!showInstructions)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition-all transform sm:hover:scale-105 shadow-lg flex items-center justify-center gap-2"
           >
             💡 Instructions
           </button>
@@ -175,18 +178,18 @@ function ReadingInner() {
             onClick={() => setShowInstructions(false)}
           >
             <div
-              className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full"
+              className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-2xl w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Recording Instructions</h2>
+              <div className="flex justify-between items-center mb-6 gap-3">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Recording Instructions</h2>
                 <button onClick={() => setShowInstructions(false)} className="text-gray-500 hover:text-gray-700 text-2xl">
                   ×
                 </button>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800 mb-4">How to Record:</h3>
-              <ul className="space-y-3 text-gray-700">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">How to Record:</h3>
+              <ul className="space-y-3 text-gray-700 text-sm sm:text-base">
                 <li className="flex items-start gap-3">
                   <span className="text-purple-600 font-bold text-lg">•</span>
                   <span>Click on any character to start recording</span>
@@ -241,12 +244,13 @@ function ReadingInner() {
         )}
 
         {!isLoading && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">
               {typeDisplayNames[selectedType as keyof typeof typeDisplayNames]}
             </h3>
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
+            {/* Grid: 2 columns on mobile, grows gradually */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4">
               {characterSets[selectedType as keyof typeof characterSets].map((character) => {
                 const attempts = progress[character.toLowerCase()] || 0;
                 return (
