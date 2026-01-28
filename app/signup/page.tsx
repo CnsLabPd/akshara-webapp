@@ -12,9 +12,39 @@ interface SignupResponse {
   fullName: string;
 }
 
+function getPasswordStrength(pw: string) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const percent = Math.min(100, Math.round((score / 5) * 100));
+  const label = score >= 4 ? 'Strong' : score === 3 ? 'Good' : score === 2 ? 'Fair' : 'Weak';
+  return { percent, label };
+}
+
+function getStrengthColor(label: string) {
+  switch (label) {
+    case 'Strong':
+      return 'bg-green-500';
+    case 'Good':
+      return 'bg-yellow-400';
+    case 'Fair':
+      return 'bg-orange-400';
+    default:
+      return 'bg-red-400';
+  }
+}
+
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [fullName, setFullName] = useState('');
   const [state, setState] = useState('');
   const [district, setDistrict] = useState('');
@@ -24,6 +54,9 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
+
+  const strength = getPasswordStrength(password);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +76,16 @@ export default function SignupPage() {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (!confirmPassword) {
+      setError('Please confirm your password');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
@@ -140,17 +183,82 @@ export default function SignupPage() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Password <span className="text-red-500">*</span>
             </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors text-gray-900 font-semibold placeholder:text-gray-500"
-              placeholder="Enter a strong password (min 8 characters)"
-              required
-              disabled={isLoading}
-            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors text-gray-900 font-semibold placeholder:text-gray-500"
+                placeholder="Enter a strong password (min 8 characters)"
+                required
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                disabled={isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-purple-600 hover:text-purple-800"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+
             <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
+
+            {/* Password strength meter */}
+            <div className="mt-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">Strength</span>
+                <span className="text-xs font-semibold text-gray-700">{strength.label}</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${getStrengthColor(
+                    strength.label
+                  )}`}
+                  style={{ width: `${strength.percent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password <span className="text-red-500">*</span>
+            </label>
+
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-colors text-gray-900 font-semibold placeholder:text-gray-500"
+                placeholder="Re-enter your password"
+                required
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                disabled={isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-purple-600 hover:text-purple-800"
+                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              >
+                {showConfirmPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+
+            {/* Match indicator */}
+            {confirmPassword.length > 0 && (
+              <p className={`text-sm mt-2 ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+                {passwordsMatch ? '✓ Passwords match' : '✕ Passwords do not match'}
+              </p>
+            )}
           </div>
 
           {/* Full Name */}
